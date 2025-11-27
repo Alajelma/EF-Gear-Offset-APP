@@ -2,20 +2,14 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Gear Offset 2050 – Verzahnung / Fanuc / OCR</title>
+<title>Gear Offset 2050 – Verzahnung / OCR / DFQ / Fanuc</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- QR-Generator -->
-
-
-<!-- QR Scanner -->
-
 
 <!-- OCR -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
 
-<!-- PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- PDF (stabile Version) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
 
 <style>
 :root {
@@ -26,34 +20,45 @@
   --muted: #9bb2cc;
   --border: #2a3558;
 }
-body {
+*{box-sizing:border-box;}
+
+body{
   margin:0;
-  background:radial-gradient(circle at top, #11172f 0%, #05060a 60%);
+  background:radial-gradient(circle at top,#11172f 0%,#05060a 60%);
   color:var(--text);
-  font-family:system-ui, sans-serif;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont;
   padding:16px;
 }
-.card {
+.app{
+  max-width:1200px;
+  margin:0 auto;
+}
+
+.card{
   background:var(--panel);
   backdrop-filter:blur(18px);
   border-radius:18px;
   padding:18px;
   margin-bottom:18px;
   border:1px solid var(--border);
-  box-shadow:0 0 24px rgba(0,255,224,0.15);
 }
-h2 {
-  margin:0 0 14px 0;
+
+h2{
+  margin:0 0 12px 0;
   text-transform:uppercase;
-  font-size:15px;
+  font-size:14px;
   letter-spacing:0.18em;
   color:var(--accent);
 }
-label {
+
+label{
   color:var(--muted);
   font-size:12px;
+  display:block;
+  margin-bottom:3px;
 }
-input,select {
+
+input{
   width:100%;
   padding:7px 10px;
   border-radius:10px;
@@ -61,8 +66,10 @@ input,select {
   background:#060917cc;
   color:var(--text);
   margin-bottom:8px;
+  font-size:13px;
 }
-button {
+
+button{
   padding:7px 14px;
   background:#0c1430cc;
   border:1px solid var(--accent);
@@ -70,9 +77,15 @@ button {
   color:var(--text);
   letter-spacing:0.12em;
   font-size:11px;
+  text-transform:uppercase;
   cursor:pointer;
 }
-pre {
+button.secondary{
+  border-color:#3a4a6b;
+  background:#080d1bcc;
+}
+
+pre{
   background:#060917dd;
   border-radius:10px;
   padding:12px;
@@ -80,389 +93,491 @@ pre {
   font-size:12px;
   white-space:pre-wrap;
 }
-.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-@media(max-width:900px){ .grid-2 { grid-template-columns:1fr; } }
-.small-btn { font-size:10px; padding:5px 10px; }
-#ocrPreview { max-width:100%; border-radius:10px; margin-top:10px; display:none; }
+
+.grid-2{
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  gap:18px;
+}
+
+.grid-2-small{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:22px;
+}
+.header img{
+  height:52px;
+  border-radius:8px;
+}
+.header-title{
+  color:var(--accent);
+  font-size:16px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+}
+.header-sub{
+  color:var(--muted);
+  font-size:11px;
+}
+
+#ocrPreview{
+  max-width:100%;
+  border-radius:10px;
+  margin-top:10px;
+  display:none;
+}
+
+.status{font-size:11px;color:var(--muted);}
+.info{font-size:11px;color:var(--muted);margin-top:4px;}
+
+.template-bar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
 </style>
 </head>
 
 <body>
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-  <img src="logo.jpg" alt="Logo" style="height:52px;border-radius:8px;">
-  <div>
-    <div style="color:#4fd1ff;font-size:15px;letter-spacing:0.14em;text-transform:uppercase;">
-      Gear Offset Tool 2050
+<div class="app">
+
+  <div class="header">
+    <img src="logo.jpg" alt="Logo">
+    <div>
+      <div class="header-title">Gear Offset 2050</div>
+      <div class="header-sub">Verzahnung • OCR • DFQ • Fanuc Wear • PDF • Templates • Learning-Log</div>
     </div>
-    <div style="color:#9bb2cc;font-size:11px;">Verzahnung · OCR Analyse · Fanuc Wear · PDF · QR</div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- LINKE SEITE -->
+    <div>
+
+      <div class="card">
+        <h2>TEMPLATES</h2>
+
+        <div class="template-bar">
+          <div>
+            <label>Template Auswahl</label>
+            <select id="templateSelect"></select>
+          </div>
+
+          <div>
+            <label>Name speichern</label>
+            <input id="tplName" placeholder="z.B. Mahlring_0150787_M1">
+          </div>
+        </div>
+
+        <div class="grid-2-small">
+          <div>
+            <label>Artikel / Bezeichnung</label>
+            <input id="article_id" placeholder="z.B. 0150787 / Modul 2">
+          </div>
+          <div>
+            <label>Maschinenplatz</label>
+            <input id="machine_id" placeholder="z.B. M1 / DMG10">
+          </div>
+        </div>
+
+        <button class="secondary" onclick="saveTemplate()">Speichern</button>
+        <button class="secondary" onclick="loadTemplate()">Laden</button>
+        <button class="secondary" onclick="deleteTemplate()">Löschen</button>
+
+        <div class="info">
+          Artikel + Maschine werden pro Template gespeichert.  
+          Learning-Log speichert Offsets und Messdaten pro Lauf im Hintergrund.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>SOLLWERTE</h2>
+
+        <div class="grid-2-small">
+          <div><label>Z1 Pferch Soll</label><input id="z1P_soll"></div>
+          <div><label>Z1 Hüll Soll</label><input id="z1H_soll"></div>
+          <div><label>Z2 Pferch Soll</label><input id="z2P_soll"></div>
+          <div><label>Z2 Hüll Soll</label><input id="z2H_soll"></div>
+        </div>
+
+        <div class="grid-2-small">
+          <div><label>Z1 Position</label><input id="z1_pos"></div>
+          <div><label>Z2 Position</label><input id="z2_pos"></div>
+        </div>
+
+        <label>Fräserwinkel (Grad)</label>
+        <input id="winkel" value="55">
+
+        <label>X-Faktor (Werkzeug / Kontur)</label>
+        <input id="x_factor" value="5.0">
+        <div class="info">
+          X-Faktor verstärkt X-Offset für schräge Verzahnung mit Radius  
+          (Start 5.0, später pro Maschine/Artikel anpassen).
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>ISTWERTE · OCR</h2>
+
+        <div class="grid-2-small">
+          <div><label>Z1 Pferch Ist</label><input id="z1P_ist"></div>
+          <div><label>Z1 Hüll Ist</label><input id="z1H_ist"></div>
+          <div><label>Z2 Pferch Ist</label><input id="z2P_ist"></div>
+          <div><label>Z2 Hüll Ist</label><input id="z2H_ist"></div>
+        </div>
+
+        <input id="ocrFile" type="file" accept="image/*">
+        <button class="secondary" onclick="runOCR()">OCR starten</button>
+
+        <img id="ocrPreview">
+        <div id="ocrStatus" class="status"></div>
+
+        <div class="info">
+          OCR liest den Istwert aus UTol = 3. Zahl jeder GX/GN-Zeile.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>DFQ DATEI</h2>
+        <input id="dfqFile" type="file" accept=".dfq,.txt">
+        <button class="secondary" onclick="parseDFQ()">DFQ laden</button>
+        <div class="info">K0001/1–4 → Z1P, Z1H, Z2P, Z2H Ist.</div>
+      </div>
+
+    </div>
+
+    <!-- RECHTE SEITE -->
+    <div>
+
+      <div class="card">
+        <h2>BERECHNUNG X / Z / Y</h2>
+        <button onclick="calculate()">Berechnen</button>
+        <button class="secondary" onclick="exportPDF()" style="margin-left:8px;">PDF EXPORT</button>
+        <pre id="result" style="margin-top:10px;">Noch keine Berechnung</pre>
+      </div>
+
+      <div class="card">
+        <h2>FANUC WEAR</h2>
+        <pre id="fanucOut">Noch keine Daten</pre>
+      </div>
+
+    </div>
+
   </div>
 </div>
-
-<!-- QR für App -->
-
-
-<div class="grid-2">
-
-<!-- LINKER BEREICH -->
-<div>
-
-<!-- TEMPLATES -->
-<div class="card">
-<h2>Templates</h2>
-
-<label>Vorlage</label>
-<select id="templateSelect"></select>
-
-<button class="small-btn" onclick="loadTemplate()">Laden</button>
-<button class="small-btn" onclick="deleteTemplate()">Loeschen</button>
-
-<hr style="border-color:#2a3558;margin:14px 0;">
-
-<label>Template speichern als</label>
-<input id="tplName" placeholder="z. B. Modul_1_55grad">
-<button class="small-btn" onclick="saveTemplate()">Speichern</button>
-</div>
-
-<!-- SOLLWERTE -->
-<div class="card">
-<h2>Sollwerte</h2>
-
-<div class="grid-2">
-  <div>
-    <label>Z1 Pferch Soll</label>
-    <input id="z1P_soll" type="number" step="0.001">
-  </div>
-  <div>
-    <label>Z1 Huell Soll</label>
-    <input id="z1H_soll" type="number" step="0.001">
-  </div>
-  <div>
-    <label>Z2 Pferch Soll</label>
-    <input id="z2P_soll" type="number" step="0.001">
-  </div>
-  <div>
-    <label>Z2 Huell Soll</label>
-    <input id="z2H_soll" type="number" step="0.001">
-  </div>
-</div>
-
-<div class="grid-2">
-  <div>
-    <label>Z1 Position</label>
-    <input id="z1_pos" type="number" step="0.001" placeholder="0.000">
-  </div>
-  <div>
-    <label>Z2 Position</label>
-    <input id="z2_pos" type="number" step="0.001" placeholder="10.000">
-  </div>
-</div>
-
-<label>Fräserwinkel (Grad)</label>
-<input id="winkel" type="number" step="0.1" value="55">
-
-</div>
-
-<!-- ISTWERTE / OCR -->
-<div class="card">
-<h2>Istwerte · OCR</h2>
-
-<div class="grid-2">
-  <div><label>Z1 Pferch Ist</label><input id="z1P_ist" type="number"></div>
-  <div><label>Z1 Huell Ist</label><input id="z1H_ist" type="number"></div>
-  <div><label>Z2 Pferch Ist</label><input id="z2P_ist" type="number"></div>
-  <div><label>Z2 Huell Ist</label><input id="z2H_ist" type="number"></div>
-</div>
-
-<input id="ocrFile" type="file" accept="image/*">
-<button class="small-btn" onclick="runOCR()">OCR starten</button>
-
-<img id="ocrPreview">
-<div id="ocrStatus" style="font-size:11px;color:#9bb2cc;margin-top:6px;"></div>
-</div>
-
-</div>
-
-<!-- RECHTE SEITE -->
-<div>
-
-<!-- BERECHNUNG -->
-<div class="card">
-<h2>Berechnung X / Z / Y</h2>
-<button onclick="calculate()">Berechnen</button>
-<button class="small-btn" onclick="exportPDF()">PDF exportieren</button>
-<pre id="result">Noch keine Berechnung</pre>
-</div>
-
-<!-- FANUC -->
-<div class="card">
-<h2>Fanuc Wear Korrektur</h2>
-<pre id="fanucOut">Noch keine Daten</pre>
-</div>
-
-<!-- QR DATEN-SCANNER -->
-
-</div>
-
-</div>
-</div>
-
 
 <script>
-// --------------------------
-// Template Verwaltung
-// --------------------------
-function refreshTemplates() {
-  const sel = document.getElementById("templateSelect");
-  sel.innerHTML = "";
-  Object.keys(localStorage).filter(k => k.startsWith("gear_tpl_"))
-    .forEach(k => {
-      const op = document.createElement("option");
-      op.value = k;
-      op.textContent = k.replace("gear_tpl_","");
-      sel.appendChild(op);
-    });
+/* ---------- Templates ---------- */
+function refreshTemplateList(){
+  templateSelect.innerHTML="";
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith("tpl_"));
+  if(keys.length===0){
+    templateSelect.innerHTML="<option>Kein Template</option>";
+    return;
+  }
+  keys.forEach(k=>{
+    const dStr = localStorage.getItem(k);
+    let label = k.replace("tpl_","");
+    try{
+      const d = JSON.parse(dStr);
+      if(d.machine_id || d.article_id){
+        label = (d.machine_id || "Masch?")+" | "+(d.article_id || label);
+      }
+    }catch(e){}
+    const opt=document.createElement("option");
+    opt.value=k;
+    opt.textContent=label;
+    templateSelect.appendChild(opt);
+  });
 }
-refreshTemplates();
+refreshTemplateList();
 
-function saveTemplate() {
-  const name = document.getElementById("tplName").value.trim();
-  if(!name){ alert("Name fehlt"); return; }
+function saveTemplate(){
+  const n=tplName.value.trim();
+  if(!n){alert("Name fehlt");return;}
 
-  const data = {
-    z1P_soll: z1P_soll.value,
-    z1H_soll: z1H_soll.value,
-    z2P_soll: z2P_soll.value,
-    z2H_soll: z2H_soll.value,
-    z1_pos: z1_pos.value,
-    z2_pos: z2_pos.value,
-    winkel: winkel.value
+  const d={
+    article_id:article_id.value,
+    machine_id:machine_id.value,
+    z1P_soll:z1P_soll.value, z1H_soll:z1H_soll.value,
+    z2P_soll:z2P_soll.value, z2H_soll:z2H_soll.value,
+    z1_pos:z1_pos.value, z2_pos:z2_pos.value,
+    winkel:winkel.value,
+    x_factor:x_factor.value,
+    z1P_ist:z1P_ist.value, z1H_ist:z1H_ist.value,
+    z2P_ist:z2P_ist.value, z2H_ist:z2H_ist.value
   };
-  localStorage.setItem("gear_tpl_"+name, JSON.stringify(data));
-  refreshTemplates();
-  alert("Gespeichert");
+  localStorage.setItem("tpl_"+n,JSON.stringify(d));
+  refreshTemplateList();
 }
 
-function loadTemplate() {
-  const key = document.getElementById("templateSelect").value;
-  if(!key) return;
-  const data = JSON.parse(localStorage.getItem(key));
-  Object.keys(data).forEach(k => document.getElementById(k).value = data[k]);
-  alert("Template geladen");
+function loadTemplate(){
+  const key=templateSelect.value;
+  if(!key.startsWith("tpl_"))return;
+  const d=JSON.parse(localStorage.getItem(key));
+  Object.keys(d).forEach(k=>{
+    if(document.getElementById(k)) document.getElementById(k).value=d[k];
+  });
 }
 
-function deleteTemplate() {
-  const key = document.getElementById("templateSelect").value;
-  if(!key) return;
+function deleteTemplate(){
+  const key=templateSelect.value;
+  if(!key.startsWith("tpl_"))return;
   localStorage.removeItem(key);
-  refreshTemplates();
+  refreshTemplateList();
 }
 
-// --------------------------
-// QR für App-URL
-// --------------------------
-
-
-  const canvas = document.getElementById("qrAppCanvas");
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0,0,200,200);
-
-  QRCode.toCanvas(canvas, url, {margin:1,scale:6});
-
-  const logo = document.querySelector("img[src='logo.jpg']");
-  if(logo.complete) drawLogoOnQR(canvas,logo);
-  else logo.onload = ()=>drawLogoOnQR(canvas,logo);
-}
-
-
-
-// --------------------------
-// OCR
-// --------------------------
+/* ---------- OCR (UTol = 3. Zahl) ---------- */
 async function runOCR(){
-  const fi = document.getElementById("ocrFile");
-  if(!fi.files[0]){ alert("Bild fehlt"); return; }
+  const file=ocrFile.files[0];
+  if(!file){alert("Bitte Bild wählen");return;}
+  ocrStatus.textContent="OCR läuft...";
 
-  document.getElementById("ocrStatus").textContent="Erkenne Text...";
-  const img = fi.files[0];
-  const reader = new FileReader();
-  reader.onload = async()=>{
-    const preview=document.getElementById("ocrPreview");
-    preview.src=reader.result;
-    preview.style.display="block";
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    ocrPreview.src=reader.result;
+    ocrPreview.style.display="block";
 
-    const {data:{text}} = await Tesseract.recognize(reader.result,"deu");
+    const {data:{text}} = await Tesseract.recognize(reader.result,'deu');
     parseOCR(text);
+    ocrStatus.textContent="OCR abgeschlossen";
   };
-  reader.readAsDataURL(img);
+  reader.readAsDataURL(file);
 }
 
-// Pferch / Huell Werte erkennen
 function parseOCR(text){
-  const lines = text.split(/\n/).map(l=>l.trim());
-  const found = {Z1P:null,Z1H:null,Z2P:null,Z2H:null};
+  const lines=text.split(/\r?\n/).map(l=>l.trim());
+  const rel=lines.filter(l=>/(GX|GN)/i.test(l));
 
-  lines.forEach(line=>{
-    if(!/Pferch|Huell/.test(line)) return;
-    const match = line.match(/(\d{2}\.\d{3})/g);
-    if(!match) return;
-    const val = parseFloat(match[match.length-1]);
-
-    const id = line.match(/^(\d+)_/);
-    const nr = id ? parseInt(id[1]) : null;
-
-    if(nr==1) if(/Pferch/.test(line)) found.Z1P = val;
-    if(nr==2) if(/Huell/.test(line))  found.Z1H = val;
-    if(nr==3) if(/Pferch/.test(line)) found.Z2P = val;
-    if(nr==4) if(/Huell/.test(line))  found.Z2H = val;
+  const out=[];
+  rel.forEach(l=>{
+    const nums=[...l.matchAll(/(\d{1,2}\.\d{3})/g)];
+    if(nums.length>=3){
+      out.push(parseFloat(nums[2][1])); // UTol = 3. Zahl
+    }
   });
 
-  if(found.Z1P) z1P_ist.value = found.Z1P;
-  if(found.Z1H) z1H_ist.value = found.Z1H;
-  if(found.Z2P) z2P_ist.value = found.Z2P;
-  if(found.Z2H) z2H_ist.value = found.Z2H;
+  if(out.length<4){
+    alert("OCR unvollständig:\n"+out.join(", "));
+    return;
+  }
 
-  document.getElementById("ocrStatus").textContent="OCR abgeschlossen";
+  z1P_ist.value=out[0].toFixed(3);
+  z1H_ist.value=out[1].toFixed(3);
+  z2P_ist.value=out[2].toFixed(3);
+  z2H_ist.value=out[3].toFixed(3);
 }
 
-// --------------------------
-// Berechnung
-// --------------------------
+/* ---------- DFQ ---------- */
+function parseDFQ(){
+  const file=dfqFile.files[0];
+  if(!file){alert("DFQ wählen");return;}
+
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const lines=reader.result.split(/\r?\n/);
+    const v={};
+    lines.forEach(l=>{
+      const m=l.match(/K0001\/(\d+)\s+([\d\.]+)/);
+      if(m){v[m[1]]=parseFloat(m[2]);}
+    });
+
+    if(v["1"]) z1P_ist.value=v["1"].toFixed(3);
+    if(v["2"]) z1H_ist.value=v["2"].toFixed(3);
+    if(v["3"]) z2P_ist.value=v["3"].toFixed(3);
+    if(v["4"]) z2H_ist.value=v["4"].toFixed(3);
+
+    alert("DFQ geladen");
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Learning-Log speichern ---------- */
+function storeLearningSample(machine, article, sample){
+  if(!machine && !article) return;
+  const key = "learn_"+(machine||"") +"_"+(article||"");
+  let arr = [];
+  try{
+    arr = JSON.parse(localStorage.getItem(key)) || [];
+  }catch(e){ arr=[]; }
+  sample.time = Date.now();
+  arr.push(sample);
+  if(arr.length>50) arr = arr.slice(arr.length-50); // max 50 letzte Läufe
+  localStorage.setItem(key, JSON.stringify(arr));
+}
+
+/* ---------- Berechnung (X/Z Fanuc, Y nur wenn nötig) ---------- */
 function calculate(){
   const f=id=>parseFloat(document.getElementById(id).value);
 
-  const z1P_s=f("z1P_soll"), z1H_s=f("z1H_soll");
-  const z2P_s=f("z2P_soll"), z2H_s=f("z2H_soll");
+  const z1Ps=f("z1P_soll"), z1Hs=f("z1H_soll"),
+        z2Ps=f("z2P_soll"), z2Hs=f("z2H_soll");
 
-  const z1P_i=f("z1P_ist"), z1H_i=f("z1H_ist");
-  const z2P_i=f("z2P_ist"), z2H_i=f("z2H_ist");
+  const z1Pi=f("z1P_ist"), z1Hi=f("z1H_ist"),
+        z2Pi=f("z2P_ist"), z2Hi=f("z2H_ist");
 
-  const Z1=f("z1_pos"), Z2=f("z2_pos");
   const W=f("winkel");
+  const xFactor = parseFloat(x_factor.value) || 1.0;
 
-  const D1_s=(z1P_s+z1H_s)/2;
-  const D2_s=(z2P_s+z2H_s)/2;
+  // Mittlere Durchmesser Soll/Ist
+  const D1s=(z1Ps+z1Hs)/2, D2s=(z2Ps+z2Hs)/2;
+  const D1i=(z1Pi+z1Hi)/2, D2i=(z2Pi+z2Hi)/2;
 
-  const D1_i=(z1P_i+z1H_i)/2;
-  const D2_i=(z2P_i+z2H_i)/2;
+  const dD1=D1i-D1s;
+  const dD2=D2i-D2s;
 
-  const dD1=D1_i-D1_s;
-  const dD2=D2_i-D2_s;
+  // Lage / Steigung
+  const dMean=(dD1+dD2)/2;   // Gesamt-Lage
+  const dDiff=dD2-dD1;       // Steigung zwischen Schnitt 1/2
 
-  const dMean=(dD1+dD2)/2;
-  const dDiff=dD2-dD1;
-
-  const L=Math.abs(Z2-Z1);
   const rad=W*Math.PI/180;
 
-  const offX = -dMean/2;
-  const offZ = -dDiff/(2*Math.tan(rad));
+  // Roh Offsets aus Geometrie
+  let offX_raw= -dMean/2;                  // X auf Mitte
+  let offZ_raw= -dDiff/(2*Math.tan(rad));  // Z auf Steigung
 
-  const pair1_s=z1H_s - z1P_s;
-  const pair2_s=z2H_s - z2P_s;
+  // X-Faktor für schräge Verzahnung / Radius
+  offX_raw = offX_raw * xFactor;
 
-  const pair1_i=z1H_i - z1P_i;
-  const pair2_i=z2H_i - z2P_i;
+  // Paarbildung für Y (Hüll vs. Pferch)
+  const PI1=z1Hi-z1Pi, PI2=z2Hi-z2Pi; // Ist Hüll-Pferch
+  const PS1=z1Hs-z1Ps, PS2=z2Hs-z2Ps; // Soll Hüll-Pferch
+  const dPair=((PI1-PS1)+(PI2-PS2))/2;  // Paarfehler mittig
 
-  const dPair1=pair1_i-pair1_s;
-  const dPair2=pair2_i-pair2_s;
+  const yThreshold = 0.02; // Y nur wenn wirklich nötig
+  let offY_raw=0;
+  let yTxt="Y nicht korrigiert (innerhalb Band ±0.02 mm)";
 
-  const dPairMean=(dPair1+dPair2)/2;
-
-  let offY=0;
-  let yInfo="Y scheint ok.";
-  if(Math.abs(dPairMean)>0.01){
-    offY = -dPairMean/2;
-    yInfo = dPairMean>0 ? 
-      "Huell weiter → Y korrigieren +" : 
-      "Huell näher → Y korrigieren -";
+  if(Math.abs(dPair) > yThreshold){
+    offY_raw = -dPair/2;
+    yTxt = dPair>0 ? "Hüll weiter → Y +" : "Hüll näher → Y -";
   }
 
-  const txt =
-    "Schnitt Z1 Mittel: Ist "+D1_i.toFixed(3)+" · Soll "+D1_s.toFixed(3)+" → Δ "+dD1.toFixed(3)+"\n"+
-    "Schnitt Z2 Mittel: Ist "+D2_i.toFixed(3)+" · Soll "+D2_s.toFixed(3)+" → Δ "+dD2.toFixed(3)+"\n\n"+
-    "ΔDmittel = "+dMean.toFixed(3)+"\n"+
-    "ΔDdiff   = "+dDiff.toFixed(3)+"\n"+
-    "L = "+L.toFixed(3)+" mm\n\n"+
-    "X Offset: "+offX.toFixed(3)+" mm\n"+
-    "Z Offset: "+offZ.toFixed(3)+" mm\n\n"+
-    "Pferch/Huell Differenz Z1: "+pair1_i.toFixed(3)+" (Soll "+pair1_s.toFixed(3)+")\n"+
-    "Pferch/Huell Differenz Z2: "+pair2_i.toFixed(3)+" (Soll "+pair2_s.toFixed(3)+")\n"+
-    "Δ Mittel: "+dPairMean.toFixed(3)+"\n\n"+
-    "Y Empfehlung: "+offY.toFixed(3)+" mm\n"+
-    "Kommentar: "+yInfo;
+  /* -------- Limits (volle Korrektur, nur begrenzt) -------- */
+  const maxOffX = 0.10; // X/Z maximal ±0.10 mm
+  const maxOffZ = 0.10;
+  const maxOffY = 0.05; // Y etwas enger
 
-  document.getElementById("result").textContent = txt;
+  function clamp(v,max){
+    if(v> max) v= max;
+    if(v<-max) v=-max;
+    return v;
+  }
 
-  const fan =
-    "FANUC WEAR\n"+
-    "------------------\n"+
+  const offX=clamp(offX_raw, maxOffX);
+  const offZ=clamp(offZ_raw, maxOffZ);
+  const offY=Math.abs(offY_raw)<1e-6 ? 0 : clamp(offY_raw, maxOffY);
+
+  const res=
+    "ΔD1: "+dD1.toFixed(3)+" mm\n"+
+    "ΔD2: "+dD2.toFixed(3)+" mm\n"+
+    "X-Faktor: "+xFactor.toFixed(2)+"\n"+
+    "X (Wear): "+offX.toFixed(3)+" mm\n"+
+    "Z (Wear): "+offZ.toFixed(3)+" mm\n"+
+    "Y (Wear): "+offY.toFixed(3)+" mm\n"+
+    "Y-Logik: "+yTxt;
+
+  result.textContent=res;
+
+  fanucOut.textContent=
+    "FANUC WEAR (Korrektur)\n"+
     "X: "+offX.toFixed(3)+" mm\n"+
     "Z: "+offZ.toFixed(3)+" mm\n"+
-    "Y (optional): "+offY.toFixed(3)+" mm\n\n"+
-    "Winkel: "+W.toFixed(1)+"°";
+    "Y: "+offY.toFixed(3)+" mm";
 
-  document.getElementById("fanucOut").textContent = fan;
+  window._calc=res;
 
-  window._pdfData = {txt,fan};
-}
-
-// --------------------------
-// PDF
-// --------------------------
-function exportPDF(){
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF();
-  const logo = document.querySelector("img[src='logo.jpg']");
-
-  try{
-    const c=document.createElement("canvas");
-    c.width=logo.naturalWidth;
-    c.height=logo.naturalHeight;
-    const ctx=c.getContext("2d");
-    ctx.drawImage(logo,0,0);
-    const data=c.toDataURL("image/png");
-    doc.addImage(data,"PNG",10,8,35,12);
-  }catch(e){}
-
-  doc.setFontSize(12);
-  doc.text("Gear Offset Tool 2050 – Report",10,28);
-  doc.setFontSize(9);
-  doc.text("Datum: "+new Date().toLocaleString(),10,34);
-
-  const res=window._pdfData?.txt || "";
-  const fan=window._pdfData?.fan || "";
-
-  doc.text("Berechnung:",10,44);
-  doc.setFont("courier","normal");
-  doc.text(res.split("\n"),10,50);
-
-  const y = 50 + res.split("\n").length*4 + 6;
-  doc.setFont("helvetica","normal");
-  doc.text("Fanuc:",10,y);
-  doc.setFont("courier","normal");
-  doc.text(fan.split("\n"),10,y+6);
-
-  doc.save("gear-offset-report.pdf");
-}
-
-// --------------------------
-// QR Scanner Messdaten
-// --------------------------
-,
-    {fps:10,qrbox:200},
-    decoded=>{
-      try{
-        const d=JSON.parse(decoded);
-        if(d.z1P_ist) z1P_ist.value=d.z1P_ist;
-        if(d.z1H_ist) z1H_ist.value=d.z1H_ist;
-        if(d.z2P_ist) z2P_ist.value=d.z2P_ist;
-        if(d.z2H_ist) z2H_ist.value=d.z2H_ist;
-        alert("QR geladen");
-      }catch(e){ alert("Kein gültiges JSON"); }
-      qr.stop();
-      div.style.display="none";
+  // Learning-Log speichern
+  storeLearningSample(
+    machine_id.value.trim(),
+    article_id.value.trim(),
+    {
+      xFactor:xFactor,
+      offX:offX,
+      offZ:offZ,
+      offY:offY,
+      dD1:dD1,
+      dD2:dD2
     }
   );
+}
+
+/* ---------- PDF Export ---------- */
+function exportPDF(){
+  var doc=new jsPDF();
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(16);
+  doc.text("Gear Offset – Messbericht",10,15);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica","normal");
+  let y = 22;
+  doc.text("Datum: "+new Date().toLocaleString(),10,y);
+  y += 5;
+  if(article_id.value){
+    doc.text("Artikel: "+article_id.value,10,y); y+=5;
+  }
+  if(machine_id.value){
+    doc.text("Maschinenplatz: "+machine_id.value,10,y); y+=5;
+  }
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text("Soll- und Istwerte",10,y+5);
+  doc.line(10,y+7,200,y+7);
+  y += 13;
+
+  doc.setFont("courier","normal");
+  doc.setFontSize(10);
+  doc.text("Merkmal           Soll       Ist",10,y);
+  y+=6;
+
+  function row(a,b,c){
+    doc.text(
+      (a+"               ").slice(0,15)+"  "+
+      (b||"-").toString().padStart(7)+"    "+
+      (c||"-").toString().padStart(7),
+      10,y
+    ); y+=6;
+  }
+
+  row("Z1 Pferch", z1P_soll.value, z1P_ist.value);
+  row("Z1 Hüll",   z1H_soll.value, z1H_ist.value);
+  row("Z2 Pferch", z2P_soll.value, z2P_ist.value);
+  row("Z2 Hüll",   z2H_soll.value, z2H_ist.value);
+
+  y+=4;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text("Berechnung / Offsets",10,y);
+  doc.line(10,y+2,200,y+2);
+  y+=10;
+
+  doc.setFont("courier","normal");
+  (window._calc?window._calc.split("\n"):["Keine Berechnung"])
+    .forEach(l=>{doc.text(l,10,y); y+=6;});
+
+  y+=4;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text("Fanuc Wear",10,y);
+  doc.line(10,y+2,200,y+2);
+  y+=10;
+
+  doc.setFont("courier","normal");
+  fanucOut.textContent.split("\n").forEach(l=>{
+    doc.text(l,10,y); y+=6;
+  });
+
+  doc.save("gear-offset-report.pdf");
 }
 </script>
 
