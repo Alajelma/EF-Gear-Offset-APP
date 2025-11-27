@@ -6,10 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- QR-Generator -->
-<script src="https://cdn.jsdelivr.net/npm/qrjs2@0.1.9/qrjs2.min.js"></script>
+
 
 <!-- QR Scanner -->
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 
 <!-- OCR -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
@@ -99,12 +99,7 @@ pre {
 </div>
 
 <!-- QR für App -->
-<div class="card">
-<h2>App QR Code</h2>
-<input id="appUrl" placeholder="https://deinname.github.io/gear-offset/">
-<button onclick="generateAppQR()">QR erzeugen</button>
-<canvas id="qrAppCanvas" width="200" height="200" style="margin-top:12px;"></canvas>
-</div>
+
 
 <div class="grid-2">
 
@@ -205,10 +200,7 @@ pre {
 </div>
 
 <!-- QR DATEN-SCANNER -->
-<div class="card">
-<h2>QR Messdaten</h2>
-<button class="small-btn" onclick="startScanner()">QR scannen</button>
-<div id="qrReader" style="display:none;width:260px;margin-top:10px;"></div>
+
 </div>
 
 </div>
@@ -268,9 +260,7 @@ function deleteTemplate() {
 // --------------------------
 // QR für App-URL
 // --------------------------
-function generateAppQR() {
-  const url = document.getElementById("appUrl").value.trim();
-  if(!url){ alert("URL fehlt"); return; }
+
 
   const canvas = document.getElementById("qrAppCanvas");
   const ctx = canvas.getContext("2d");
@@ -283,15 +273,7 @@ function generateAppQR() {
   else logo.onload = ()=>drawLogoOnQR(canvas,logo);
 }
 
-function drawLogoOnQR(canvas,img){
-  const ctx = canvas.getContext("2d");
-  const size = canvas.width * 0.26;
-  const x = (canvas.width - size)/2;
-  const y = (canvas.height - size)/2;
-  ctx.fillStyle="#ffffff";
-  ctx.fillRect(x-4,y-4,size+8,size+8);
-  ctx.drawImage(img,x,y,size,size);
-}
+
 
 // --------------------------
 // OCR
@@ -466,12 +448,7 @@ function exportPDF(){
 // --------------------------
 // QR Scanner Messdaten
 // --------------------------
-function startScanner(){
-  const div=document.getElementById("qrReader");
-  div.style.display="block";
-  const qr=new Html5Qrcode("qrReader");
-  qr.start(
-    {facingMode:"environment"},
+,
     {fps:10,qrbox:200},
     decoded=>{
       try{
