@@ -435,7 +435,7 @@ function parseDFQ(){
     if(v["3"]!=null) z2P_ist.value=v["3"].toFixed(3);
     if(v["4"]!=null) z2H_ist.value=v["4"].toFixed(3);
 
-    // neue DFQ → immer neue Vorschläge in X/Y/Z
+    // neue DFQ → Vorschläge in X/Y/Z immer überschreiben
     calculate(true);
   };
   reader.readAsText(file);
@@ -502,9 +502,10 @@ function applyLearning(){
 function gaussGain(samples, curMean, curDiff, curPair, axis){
   if(samples.length===0) return null;
 
-  const sigmaMean=0.05;
-  const sigmaDiff=0.05;
-  const sigmaPair=0.05;
+  // engeres Sigma → lernt schneller
+  const sigmaMean=0.03;
+  const sigmaDiff=0.03;
+  const sigmaPair=0.03;
   const invM=1/(sigmaMean*sigmaMean);
   const invD=1/(sigmaDiff*sigmaDiff);
   const invP=1/(sigmaPair*sigmaPair);
@@ -521,13 +522,13 @@ function gaussGain(samples, curMean, curDiff, curPair, axis){
 
     let x,y;
     if(axis==="X"){
-      x=s.dMean||0;      // X reagiert auf Mittelabweichung
+      x=s.dMean||0;          // X reagiert auf Mittelabweichung
       y=s.offX||0;
     }else if(axis==="Z"){
-      x=(s.dDiff||0)+(s.dMean||0); // Z reagiert auf diff+mean
+      x=(s.dMean||0)+(s.dDiff||0); // Z reagiert auf Kombination
       y=s.offZ||0;
     }else{
-      x=s.dPair||0;      // Y reagiert auf Paarabweichung
+      x=s.dPair||0;          // Y reagiert auf Paarabweichung
       y=s.offY||0;
     }
 
@@ -537,6 +538,20 @@ function gaussGain(samples, curMean, curDiff, curPair, axis){
 
   if(Math.abs(sum_wx2)<1e-6) return null;
   return sum_wxy/sum_wx2;
+}
+
+/* ---------- Offset-Vorschläge ---------- */
+function suggestOffset(samples, curMean, curDiff, curPair, feature, axis, baseGain, yEnabled){
+  if(axis==="Y" && !yEnabled) return 0;
+
+  let gain=null;
+  if(samples.length>0){
+    gain=gaussGain(samples,curMean,curDiff,curPair,axis);
+  }
+  if(gain==null){
+    gain=baseGain;
+  }
+  return gain*feature;
 }
 
 /* ---------- Berechnung ---------- */
@@ -556,12 +571,11 @@ function calculate(forceOverwrite){
   const dD1=D1i-D1s;
   const dD2=D2i-D2s;
 
-  const dMean=(dD1+dD2)/2;
-  const dDiff=dD2-dD1;
-
+  const dMean=(dD1+dD2)/2;       // mittlere Durchmesserabweichung
+  const dDiff=dD2-dD1;           // Unterschied oben/unten
   const pair2Ist=z2Hi-z2Pi;
   const pair2Soll=z2Hs-z2Ps;
-  const dPair=pair2Ist-pair2Soll;
+  const dPair=pair2Ist-pair2Soll; // Abweichung Hüll–Pferch unten
 
   const wDeg=F("winkel");
   const tanw=Math.tan(wDeg*Math.PI/180);
@@ -571,45 +585,30 @@ function calculate(forceOverwrite){
   const key=getModelKey();
   const samples=loadSamples(key);
 
-  let offX_sugg, offY_sugg, offZ_sugg;
+  // Feature-Definitionen (linear, wie echte Maschine reagiert)
+  const featX = dMean;
+  const featZ = dMean + dDiff;    // Steigung + allgemeiner Fehler
+  const featY = dPair;
 
-  // Geometrie-Fallback
-  const offX_geom = dMean/2; // Innenkontur
-  const offZ_geom = Math.abs(tanw)>1e-6 ? -(dDiff/(2*tanw)) : 0;
-  const offY_geom = yEnabled ? -(dPair/2) : 0;
+  // Basis-Gains (werden durch Lernen überschrieben)
+  const baseGainX = 1.0;   // X: fast 1:1
+  const baseGainZ = 0.6;   // Z: etwas weicher
+  const baseGainY = 0.7;   // Y: weicher, nur wenn aktiv
 
-  if(samples.length>0){
-    const fx=gaussGain(samples,dMean,dDiff,dPair,"X");
-    const fz=gaussGain(samples,dMean,dDiff,dPair,"Z");
-    const fy=gaussGain(samples,dMean,dDiff,dPair,"Y");
+  let offX_sugg = suggestOffset(samples,dMean,dDiff,dPair,featX,"X",baseGainX,yEnabled);
+  let offZ_sugg = suggestOffset(samples,dMean,dDiff,dPair,featZ,"Z",baseGainZ,yEnabled);
+  let offY_sugg = suggestOffset(samples,dMean,dDiff,dPair,featY,"Y",baseGainY,yEnabled);
 
-    // X: Mittelabweichung
-    offX_sugg = (fx!=null ? fx*dMean : offX_geom);
-
-    // Z: Kombination aus diff + mean → curX = dDiff + dMean
-    const curZx = dDiff + dMean;
-    if(fz!=null){
-      offZ_sugg = fz*curZx;
-    }else{
-      offZ_sugg = offZ_geom;
-    }
-
-    // Y: Paarabweichung
-    if(yEnabled){
-      offY_sugg = (fy!=null ? fy*dPair : offY_geom);
-    }else{
-      offY_sugg = 0;
-    }
-  }else{
-    offX_sugg = offX_geom;
+  // Fallback, falls alles extrem ist (z.B. keine Winkelinfos)
+  if(!isFinite(offZ_sugg)){
+    const offZ_geom = Math.abs(tanw)>1e-6 ? -(dDiff/(2*tanw)) : 0;
     offZ_sugg = offZ_geom;
-    offY_sugg = offY_geom;
   }
 
   // Rundung & Deadzone
   function clean(v){
     v=Math.round(v*100)/100;
-    if(Math.abs(v)<0.005) return 0;
+    if(Math.abs(v)<0.002) return 0;
     return v;
   }
   offX_sugg=clean(offX_sugg);
