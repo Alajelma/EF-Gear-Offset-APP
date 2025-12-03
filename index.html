@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
 :root {
@@ -111,10 +112,22 @@ pre{
   font-size:11px;
   margin:0;
 }
+.orange{
+  color:#ffb347;
+  font-weight:bold;
+}
+#qrcode{
+  width:260px;
+  height:260px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-top:8px;
+}
 .info{
   font-size:10px;
   color:var(--muted);
-  margin-top:3px;
+  margin-top:4px;
 }
 .header{
   display:flex;
@@ -144,7 +157,6 @@ pre{
 <body>
 <div class="app">
 
-<!-- HEADER -->
 <div class="header">
   <img src="logo.jpg" alt="Logo">
   <div>
@@ -155,63 +167,45 @@ pre{
 
 <div class="grid-main">
 
-<!-- LINKE SEITE -->
 <div>
 
   <div class="card">
     <h2>Stammdaten & Templates</h2>
 
     <div class="grid-2-small">
-      <div>
-        <label>Artikel</label>
-        <input id="article_id">
-      </div>
-      <div>
-        <label>Maschine</label>
-        <input id="machine_id">
-      </div>
+      <div><label>Artikel</label><input id="article_id"></div>
+      <div><label>Maschine</label><input id="machine_id"></div>
     </div>
 
     <div class="grid-2-small">
-      <div>
-        <label>Template Auswahl</label>
-        <select id="templateSelect"></select>
-      </div>
-      <div>
-        <label>Name speichern</label>
-        <input id="tplName" placeholder="z.B. MHR_14042_M1">
-      </div>
+      <div><label>Template Auswahl</label><select id="templateSelect"></select></div>
+      <div><label>Name speichern</label><input id="tplName"></div>
     </div>
 
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
       <button class="secondary" onclick="saveTemplate()">Speichern</button>
       <button class="secondary" onclick="loadTemplate()">Laden</button>
-      <button class="secondary" onclick="deleteTemplate()">Löschen</button>
+      <button class="secondary" onclick="deleteTemplate()">Loeschen</button>
     </div>
 
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-      <button class="secondary" onclick="exportTemplates()">Export</button>
-      <button class="secondary" onclick="importTemplates()">Import</button>
-    </div>
-
-    <textarea id="tplJson" rows="2" placeholder="JSON Export / Import"></textarea>
+    <textarea id="tplJson" rows="2"></textarea>
   </div>
 
   <div class="card">
-    <h2>Soll- / Istwerte</h2>
+    <h2>Soll / Ist</h2>
 
     <div class="grid-4-small">
       <div><label>Z1 Pferch Soll</label><input id="z1P_soll"></div>
-      <div><label>Z1 Hüll Soll</label><input id="z1H_soll"></div>
+      <div><label>Z1 Huell Soll</label><input id="z1H_soll"></div>
       <div><label>Z2 Pferch Soll</label><input id="z2P_soll"></div>
-      <div><label>Z2 Hüll Soll</label><input id="z2H_soll"></div>
+      <div><label>Z2 Huell Soll</label><input id="z2H_soll"></div>
     </div>
 
     <div class="grid-4-small">
       <div><label>Z1 Pferch Ist</label><input id="z1P_ist"></div>
-      <div><label>Z1 Hüll Ist</label><input id="z1H_ist"></div>
+      <div><label>Z1 Huell Ist</label><input id="z1H_ist"></div>
       <div><label>Z2 Pferch Ist</label><input id="z2P_ist"></div>
-      <div><label>Z2 Hüll Ist</label><input id="z2H_ist"></div>
+      <div><label>Z2 Huell Ist</label><input id="z2H_ist"></div>
     </div>
 
     <div class="grid-2-small">
@@ -220,9 +214,9 @@ pre{
     </div>
 
     <div class="grid-2-small">
-      <div><label>Fräserwinkel (Grad)</label><input id="winkel" value="55"></div>
+      <div><label>Fraeserwinkel</label><input id="winkel" value="55"></div>
       <div>
-        <label>Y-Korrektur Modus</label>
+        <label>Y-Modus</label>
         <div style="display:flex;gap:4px;">
           <button id="yOffBtn" class="y-off y-active" onclick="setYMode(false)">Y AUS</button>
           <button id="yOnBtn" class="y-on" onclick="setYMode(true)">Y EIN</button>
@@ -230,32 +224,37 @@ pre{
         <input id="y_enable" type="hidden" value="0">
       </div>
     </div>
+
+    <div class="grid-2-small">
+      <div><label>Y Standard</label><input id="offsetY_std"></div>
+      <div><label>Vorschlag</label><div id="yStdSuggest" class="orange"></div></div>
+    </div>
   </div>
 
   <div class="card">
-    <h2>DFQ Istwerte</h2>
+    <h2>DFQ</h2>
     <div class="grid-2-small">
-      <div><label>DFQ Datei</label><input id="dfqFile" type="file" accept=".dfq,.txt"></div>
+      <div><input id="dfqFile" type="file" accept=".dfq,.txt"></div>
       <div style="display:flex;align-items:flex-end;"><button class="secondary" onclick="parseDFQ()">DFQ laden</button></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Lernen aus Korrektur</h2>
+    <h2>Lernen</h2>
 
     <div class="grid-2-small">
-      <div><label>Meine Korrektur X (mm)</label><input id="learn_x"></div>
-      <div><label>Meine Korrektur Y (mm)</label><input id="learn_y"></div>
+      <div><label>Korr X</label><input id="learn_x"></div>
+      <div><label>Korr Y</label><input id="learn_y"></div>
     </div>
 
     <div class="grid-2-small">
-      <div><label>Meine Korrektur Z (mm)</label><input id="learn_z"></div>
+      <div><label>Korr Z</label><input id="learn_z"></div>
       <div></div>
     </div>
 
     <div style="display:flex;gap:6px;">
-      <button class="secondary" onclick="saveLearnStart()">Lern-Start speichern</button>
-      <button class="secondary" onclick="applyLearning()">Korrektur lernen</button>
+      <button class="secondary" onclick="saveLearnStart()">Start speichern</button>
+      <button class="secondary" onclick="applyLearning()">Lernen</button>
     </div>
 
     <div id="factorStatus" class="info"></div>
@@ -263,11 +262,10 @@ pre{
 
 </div>
 
-<!-- RECHTE SEITE -->
 <div>
 
   <div class="card">
-    <h2>Berechnung & Vorschlag</h2>
+    <h2>Berechnung</h2>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button onclick="calculate(false)">Berechnen</button>
       <button class="secondary" onclick="exportPDF()">PDF</button>
@@ -276,7 +274,7 @@ pre{
   </div>
 
   <div class="card">
-    <h2>Fanuc Wear Vorschlag</h2>
+    <h2>Fanuc Wear</h2>
     <pre id="fanucOut">Noch keine Daten</pre>
   </div>
 
@@ -285,7 +283,6 @@ pre{
 </div>
 
 <script>
-// Zahl mit Komma/Punkt, leere Felder = 0
 function F(id){
   const el=document.getElementById(id);
   if(!el) return 0;
@@ -294,7 +291,6 @@ function F(id){
   return isNaN(v)?0:v;
 }
 
-/* ---------- Templates ---------- */
 function refreshTemplateList(){
   templateSelect.innerHTML="";
   const keys=Object.keys(localStorage).filter(k=>k.startsWith("tpl_"));
@@ -316,7 +312,7 @@ refreshTemplateList();
 
 function saveTemplate(){
   const name=tplName.value.trim();
-  if(!name){alert("Name fehlt.");return;}
+  if(!name)return;
   const d={
     article_id:article_id.value,
     machine_id:machine_id.value,
@@ -327,7 +323,8 @@ function saveTemplate(){
     z1_pos:z1_pos.value,
     z2_pos:z2_pos.value,
     winkel:winkel.value,
-    y_enable:y_enable.value
+    y_enable:y_enable.value,
+    offsetY_std:offsetY_std.value
   };
   localStorage.setItem("tpl_"+name,JSON.stringify(d));
   refreshTemplateList();
@@ -339,13 +336,11 @@ function loadTemplate(){
   const d=JSON.parse(localStorage.getItem(key));
   Object.keys(d).forEach(k=>{
     const el=document.getElementById(k);
-    if(!el) return;
-    if(k==="y_enable"){
-      setYMode(d[k]=="1");
-    }else{
-      el.value=d[k];
-    }
+    if(!el)return;
+    if(k==="y_enable"){setYMode(d[k]=="1");}
+    else el.value=d[k];
   });
+  saveYStd(F("offsetY_std"));
 }
 
 function deleteTemplate(){
@@ -356,323 +351,211 @@ function deleteTemplate(){
   }
 }
 
-function exportTemplates(){
-  const all={};
-  Object.keys(localStorage).forEach(k=>{
-    if(k.startsWith("tpl_")){
-      all[k.replace("tpl_","")] = JSON.parse(localStorage.getItem(k));
-    }
-  });
-  tplJson.value=JSON.stringify(all,null,2);
+function saveLearnStart(){
+  learnStart={
+    z1Ps:F("z1P_soll"), z1Hs:F("z1H_soll"),
+    z2Ps:F("z2P_soll"), z2Hs:F("z2H_soll"),
+    z1Pi:F("z1P_ist"), z1Hi:F("z1H_ist"),
+    z2Pi:F("z2P_ist"), z2Hi:F("z2H_ist")
+  };
+  factorStatus.textContent="Start gespeichert";
 }
 
-function importTemplates(){
-  try{
-    const obj=JSON.parse(tplJson.value);
-    Object.keys(obj).forEach(k=>{
-      localStorage.setItem("tpl_"+k,JSON.stringify(obj[k]));
-    });
-    refreshTemplateList();
-    alert("Templates importiert");
-  }catch(e){
-    alert("Import Fehler");
-  }
+function applyLearning(){
+  if(!learnStart)return;
+  const lx=F("learn_x"), ly=F("learn_y"), lz=F("learn_z");
+  const s=learnStart;
+  const D1s=(s.z1Ps+s.z1Hs)/2, D2s=(s.z2Ps+s.z2Hs)/2;
+  const D1i=(s.z1Pi+s.z1Hi)/2, D2i=(s.z2Pi+s.z2Hi)/2;
+  const dMean=((D1i-D1s)+(D2i-D2s))/2;
+  const dDiff=(D2i-D2s)-(D1i-D1s);
+  const pair2Ist=s.z2Hi-s.z2Pi;
+  const pair2Soll=s.z2Hs-s.z2Ps;
+  const dPair=pair2Ist-pair2Soll;
+  const key=getModelKey();
+  let arr=loadSamples(key);
+  arr.push({dMean:dMean,dDiff:dDiff,dPair:dPair,offX:lx,offY:ly,offZ:lz});
+  saveSamples(key,arr);
+  factorStatus.textContent="gelernt";
 }
 
-/* ---------- Lernmodell ---------- */
 function getModelKey(){
   const m=(machine_id.value||"").trim();
   const a=(article_id.value||"").trim();
-  if(!m && !a) return "global";
+  if(!m&&!a)return"global";
   return m+"|"+a;
 }
 
 function loadSamples(key){
   try{
     const s=localStorage.getItem("samples_"+key);
-    if(!s) return [];
+    if(!s)return[];
     return JSON.parse(s);
-  }catch(e){return [];}
+  }catch(e){return[];}
 }
 
 function saveSamples(key,arr){
-  if(arr.length>300) arr=arr.slice(arr.length-300);
+  if(arr.length>300)arr=arr.slice(arr.length-300);
   localStorage.setItem("samples_"+key,JSON.stringify(arr));
 }
 
-/* ---------- Y-Modus ---------- */
+function gaussGain(s,cMean,cDiff,cPair,axis){
+  if(s.length===0)return null;
+  const sm=0.03,sd=0.03,sp=0.03;
+  const iM=1/(sm*sm), iD=1/(sd*sd), iP=1/(sp*sp);
+  let s1=0,s2=0;
+  for(const v of s){
+    const dm=cMean-(v.dMean||0);
+    const dd=cDiff-(v.dDiff||0);
+    const dp=cPair-(v.dPair||0);
+    const w=Math.exp(-0.5*(dm*dm*iM+dd*dd*iD+dp*dp*iP));
+    let x,y;
+    if(axis==="X"){x=v.dMean||0; y=v.offX||0;}
+    else if(axis==="Z"){x=(v.dMean||0)+(v.dDiff||0); y=v.offZ||0;}
+    else{x=v.dPair||0; y=v.offY||0;}
+    s1+=w*x*x; s2+=w*x*y;
+  }
+  if(Math.abs(s1)<1e-6)return null;
+  return s2/s1;
+}
+
 function setYMode(on){
-  const offBtn=document.getElementById("yOffBtn");
-  const onBtn=document.getElementById("yOnBtn");
-  const yVal=document.getElementById("y_enable");
+  const b1=yOffBtn, b2=yOnBtn;
+  y_enable.value=on?"1":"0";
   if(on){
-    yVal.value="1";
-    onBtn.classList.add("y-active");
-    offBtn.classList.remove("y-active");
+    b2.classList.add("y-active");
+    b1.classList.remove("y-active");
   }else{
-    yVal.value="0";
-    offBtn.classList.add("y-active");
-    onBtn.classList.remove("y-active");
+    b1.classList.add("y-active");
+    b2.classList.remove("y-active");
   }
 }
-setYMode(false);
 
-/* ---------- DFQ Laden ---------- */
+function loadYStd(){
+  const v=localStorage.getItem("offsetYStd");
+  return v?parseFloat(v):0;
+}
+function saveYStd(v){
+  localStorage.setItem("offsetYStd",v.toString());
+}
+
 function parseDFQ(){
-  const file=dfqFile.files[0];
-  if(!file){alert("DFQ wählen.");return;}
-  const reader=new FileReader();
-  reader.onload=()=>{
-    const lines=reader.result.split(/\r?\n/);
+  const f=dfqFile.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const L=r.result.split(/\r?\n/);
     const v={};
-    lines.forEach(l=>{
+    L.forEach(l=>{
       const m=l.match(/K0001\/(\d+)\s+([\d\.]+)/);
-      if(m){v[m[1]]=parseFloat(m[2]);}
+      if(m)v[m[1]]=parseFloat(m[2]);
     });
-
-    if(v["1"]!=null) z1P_ist.value=v["1"].toFixed(3);
-    if(v["2"]!=null) z1H_ist.value=v["2"].toFixed(3);
-    if(v["3"]!=null) z2P_ist.value=v["3"].toFixed(3);
-    if(v["4"]!=null) z2H_ist.value=v["4"].toFixed(3);
-
-    // neue DFQ → Vorschläge in X/Y/Z immer überschreiben
+    if(v["1"]!=null)z1P_ist.value=v["1"].toFixed(3);
+    if(v["2"]!=null)z1H_ist.value=v["2"].toFixed(3);
+    if(v["3"]!=null)z2P_ist.value=v["3"].toFixed(3);
+    if(v["4"]!=null)z2H_ist.value=v["4"].toFixed(3);
     calculate(true);
   };
-  reader.readAsText(file);
+  r.readAsText(f);
 }
 
-/* ---------- Lernen ---------- */
-let learnStart=null;
-
-function saveLearnStart(){
-  learnStart={
-    z1Ps:F("z1P_soll"),
-    z1Hs:F("z1H_soll"),
-    z2Ps:F("z2P_soll"),
-    z2Hs:F("z2H_soll"),
-    z1Pi:F("z1P_ist"),
-    z1Hi:F("z1H_ist"),
-    z2Pi:F("z2P_ist"),
-    z2Hi:F("z2H_ist")
-  };
-  factorStatus.textContent="Lern-Start gespeichert.";
-}
-
-function applyLearning(){
-  if(!learnStart){
-    factorStatus.textContent="Bitte zuerst Lern-Start speichern.";
-    return;
-  }
-  const lx=F("learn_x");
-  const ly=F("learn_y");
-  const lz=F("learn_z");
-
-  const s=learnStart;
-
-  const D1s=(s.z1Ps+s.z1Hs)/2;
-  const D2s=(s.z2Ps+s.z2Hs)/2;
-  const D1i=(s.z1Pi+s.z1Hi)/2;
-  const D2i=(s.z2Pi+s.z2Hi)/2;
-
-  const dMean=((D1i-D1s)+(D2i-D2s))/2;
-  const dDiff=(D2i-D2s)-(D1i-D1s);
-
-  const pair2Ist=s.z2Hi-s.z2Pi;
-  const pair2Soll=s.z2Hs-s.z2Ps;
-  const dPair=pair2Ist-pair2Soll;
-
-  const key=getModelKey();
-  let samples=loadSamples(key);
-
-  samples.push({
-    dMean:dMean,
-    dDiff:dDiff,
-    dPair:dPair,
-    offX:lx,
-    offY:ly,
-    offZ:lz
-  });
-
-  saveSamples(key,samples);
-
-  factorStatus.textContent="Korrektur gelernt.";
-}
-
-/* ---------- Gauss Filter ---------- */
-function gaussGain(samples, curMean, curDiff, curPair, axis){
-  if(samples.length===0) return null;
-
-  // engeres Sigma → lernt schneller
-  const sigmaMean=0.03;
-  const sigmaDiff=0.03;
-  const sigmaPair=0.03;
-  const invM=1/(sigmaMean*sigmaMean);
-  const invD=1/(sigmaDiff*sigmaDiff);
-  const invP=1/(sigmaPair*sigmaPair);
-
-  let sum_wx2=0;
-  let sum_wxy=0;
-
-  for(const s of samples){
-    const dM=curMean-(s.dMean||0);
-    const dD=curDiff-(s.dDiff||0);
-    const dP=curPair-(s.dPair||0);
-    const dist2=dM*dM*invM + dD*dD*invD + dP*dP*invP;
-    const w=Math.exp(-0.5*dist2);
-
-    let x,y;
-    if(axis==="X"){
-      x=s.dMean||0;          // X reagiert auf Mittelabweichung
-      y=s.offX||0;
-    }else if(axis==="Z"){
-      x=(s.dMean||0)+(s.dDiff||0); // Z reagiert auf Kombination
-      y=s.offZ||0;
-    }else{
-      x=s.dPair||0;          // Y reagiert auf Paarabweichung
-      y=s.offY||0;
-    }
-
-    sum_wx2+=w*x*x;
-    sum_wxy+=w*x*y;
-  }
-
-  if(Math.abs(sum_wx2)<1e-6) return null;
-  return sum_wxy/sum_wx2;
-}
-
-/* ---------- Offset-Vorschläge ---------- */
-function suggestOffset(samples, curMean, curDiff, curPair, feature, axis, baseGain, yEnabled){
-  if(axis==="Y" && !yEnabled) return 0;
-
-  let gain=null;
-  if(samples.length>0){
-    gain=gaussGain(samples,curMean,curDiff,curPair,axis);
-  }
-  if(gain==null){
-    gain=baseGain;
-  }
-  return gain*feature;
-}
-
-/* ---------- Berechnung ---------- */
-// forceOverwrite = true: DFQ geladen → Vorschläge IMMER in Felder schreiben
-// forceOverwrite = false: Berechnen → nur leere Felder füllen, manuelle Werte bleiben
-function calculate(forceOverwrite){
+function calculate(force){
   const z1Ps=F("z1P_soll"), z1Hs=F("z1H_soll");
   const z2Ps=F("z2P_soll"), z2Hs=F("z2H_soll");
   const z1Pi=F("z1P_ist"), z1Hi=F("z1H_ist");
   const z2Pi=F("z2P_ist"), z2Hi=F("z2H_ist");
 
-  const D1s=(z1Ps+z1Hs)/2;
-  const D2s=(z2Ps+z2Hs)/2;
-  const D1i=(z1Pi+z1Hi)/2;
-  const D2i=(z2Pi+z2Hi)/2;
+  const D1s=(z1Ps+z1Hs)/2, D2s=(z2Ps+z2Hs)/2;
+  const D1i=(z1Pi+z1Hi)/2, D2i=(z2Pi+z2Hi)/2;
 
   const dD1=D1i-D1s;
   const dD2=D2i-D2s;
 
-  const dMean=(dD1+dD2)/2;       // mittlere Durchmesserabweichung
-  const dDiff=dD2-dD1;           // Unterschied oben/unten
+  const dMean=(dD1+dD2)/2;
+  const dDiff=dD2-dD1;
+
   const pair2Ist=z2Hi-z2Pi;
   const pair2Soll=z2Hs-z2Ps;
-  const dPair=pair2Ist-pair2Soll; // Abweichung Hüll–Pferch unten
+  const dPair=pair2Ist-pair2Soll;
 
-  const wDeg=F("winkel");
-  const tanw=Math.tan(wDeg*Math.PI/180);
+  const w=F("winkel")*(Math.PI/180);
+  const tanw=Math.tan(w), cosw=Math.cos(w);
+  const ZD=5.55;
+  const wirkX=(1/cosw)*(1+tanw*ZD);
 
-  const yEnabled=(document.getElementById("y_enable").value==="1");
+  const yEnabled=y_enable.value==="1";
+
+  let ys=F("offsetY_std");
+  if(isNaN(ys))ys=0;
+  saveYStd(ys);
+  offsetY_std.value=ys.toFixed(3);
+
+  const featX=dMean;
+  const featZ=dMean+dDiff;
+  const featY=dPair;
 
   const key=getModelKey();
-  const samples=loadSamples(key);
+  const s=loadSamples(key);
 
-  // Feature-Definitionen (linear, wie echte Maschine reagiert)
-  const featX = dMean;
-  const featZ = dMean + dDiff;    // Steigung + allgemeiner Fehler
-  const featY = dPair;
+  const baseX=wirkX;
+  const baseZ=0.6;
+  const baseY=0.7;
 
-  // Basis-Gains (werden durch Lernen überschrieben)
-  const baseGainX = 1.0;   // X: fast 1:1
-  const baseGainZ = 0.6;   // Z: etwas weicher
-  const baseGainY = 0.7;   // Y: weicher, nur wenn aktiv
-
-  let offX_sugg = suggestOffset(samples,dMean,dDiff,dPair,featX,"X",baseGainX,yEnabled);
-  let offZ_sugg = suggestOffset(samples,dMean,dDiff,dPair,featZ,"Z",baseGainZ,yEnabled);
-  let offY_sugg = suggestOffset(samples,dMean,dDiff,dPair,featY,"Y",baseGainY,yEnabled);
-
-  // Fallback, falls alles extrem ist (z.B. keine Winkelinfos)
-  if(!isFinite(offZ_sugg)){
-    const offZ_geom = Math.abs(tanw)>1e-6 ? -(dDiff/(2*tanw)) : 0;
-    offZ_sugg = offZ_geom;
+  function sugg(feat,ax,base){
+    if(ax==="Y"&&!yEnabled)return 0;
+    let g=s.length>0?gaussGain(s,dMean,dDiff,dPair,ax):null;
+    if(g==null)g=base;
+    return g*feat;
   }
 
-  // Rundung & Deadzone
+  let oX=sugg(featX,"X",baseX);
+  let oZ=sugg(featZ,"Z",baseZ);
+  let oY=sugg(featY,"Y",baseY);
+
+  if(!isFinite(oZ)){
+    oZ=Math.abs(tanw)>1e-6?-(dDiff/(2*tanw)):0;
+  }
+
   function clean(v){
     v=Math.round(v*100)/100;
-    if(Math.abs(v)<0.002) return 0;
-    return v;
+    return Math.abs(v)<0.002?0:v;
   }
-  offX_sugg=clean(offX_sugg);
-  offY_sugg=clean(offY_sugg);
-  offZ_sugg=clean(offZ_sugg);
+  oX=clean(oX); oY=clean(oY); oZ=clean(oZ);
 
-  let offX_used, offY_used, offZ_used;
+  if(yEnabled&&oY!==0)yStdSuggest.textContent=oY.toFixed(2)+" mm";
+  else yStdSuggest.textContent="";
 
-  if(forceOverwrite){
-    // DFQ: Vorschlag IMMER in Felder
-    learn_x.value=offX_sugg.toFixed(2);
-    learn_y.value=offY_sugg.toFixed(2);
-    learn_z.value=offZ_sugg.toFixed(2);
-    offX_used=offX_sugg;
-    offY_used=offY_sugg;
-    offZ_used=offZ_sugg;
+  let uX,uZ,uY=ys;
+
+  if(force){
+    learn_x.value=oX.toFixed(2);
+    learn_z.value=oZ.toFixed(2);
+    uX=oX; uZ=oZ;
   }else{
-    // Berechnen: leere Felder füllen, manuelle Werte respektieren
-    if(learn_x.value.trim()===""){
-      learn_x.value=offX_sugg.toFixed(2);
-      offX_used=offX_sugg;
-    }else{
-      offX_used=clean(F("learn_x"));
-      learn_x.value=offX_used.toFixed(2);
-    }
-
-    if(learn_y.value.trim()===""){
-      learn_y.value=offY_sugg.toFixed(2);
-      offY_used=offY_sugg;
-    }else{
-      offY_used=clean(F("learn_y"));
-      learn_y.value=offY_used.toFixed(2);
-    }
-
-    if(learn_z.value.trim()===""){
-      learn_z.value=offZ_sugg.toFixed(2);
-      offZ_used=offZ_sugg;
-    }else{
-      offZ_used=clean(F("learn_z"));
-      learn_z.value=offZ_used.toFixed(2);
-    }
+    if(learn_x.value.trim()===""){learn_x.value=oX.toFixed(2); uX=oX;}
+    else{uX=clean(F("learn_x")); learn_x.value=uX.toFixed(2);}
+    if(learn_z.value.trim()===""){learn_z.value=oZ.toFixed(2); uZ=oZ;}
+    else{uZ=clean(F("learn_z")); learn_z.value=uZ.toFixed(2);}
   }
 
-  const res=
-    "ΔD1 (Mitte Z1): "+dD1.toFixed(3)+" mm\n"+
-    "ΔD2 (Mitte Z2): "+dD2.toFixed(3)+" mm\n"+
+  result.textContent=
+    "ΔD1: "+dD1.toFixed(3)+" mm\n"+
+    "ΔD2: "+dD2.toFixed(3)+" mm\n"+
     "ΔDmean: "+dMean.toFixed(3)+" mm\n"+
-    "ΔDiff (Z2-Z1): "+dDiff.toFixed(3)+" mm\n"+
-    "ΔPair2 (Hüll-Pferch Z2): "+dPair.toFixed(3)+" mm\n\n"+
-    "Offsets verwendet (Hundertstel):\n"+
-    "X: "+offX_used.toFixed(2)+" mm\n"+
-    "Z: "+offZ_used.toFixed(2)+" mm\n"+
-    "Y: "+offY_used.toFixed(2)+" mm";
-
-  result.textContent=res;
+    "ΔDiff: "+dDiff.toFixed(3)+" mm\n"+
+    "ΔPair2: "+dPair.toFixed(3)+" mm\n\n"+
+    "Offsets:\n"+
+    "X: "+uX.toFixed(2)+" mm\n"+
+    "Z: "+uZ.toFixed(2)+" mm\n"+
+    "Y: "+uY.toFixed(2)+" mm";
 
   fanucOut.textContent=
-    "FANUC WEAR (Vorschlag / verwendet)\n"+
-    "X: "+offX_used.toFixed(2)+" mm\n"+
-    "Z: "+offZ_used.toFixed(2)+" mm\n"+
-    "Y: "+offY_used.toFixed(2)+" mm";
+    "FANUC WEAR\n"+
+    "X: "+uX.toFixed(2)+" mm\n"+
+    "Z: "+uZ.toFixed(2)+" mm\n"+
+    "Y: "+uY.toFixed(2)+" mm";
 }
 
-/* ---------- PDF Export ---------- */
 function exportPDF(){
   var doc=new jsPDF();
 
@@ -683,8 +566,8 @@ function exportPDF(){
   doc.setFont("helvetica","normal");
   doc.setFontSize(9);
   doc.text("Datum: "+new Date().toLocaleString(),10,20);
-  if(article_id.value) doc.text("Artikel: "+article_id.value,10,26);
-  if(machine_id.value) doc.text("Maschine: "+machine_id.value,10,32);
+  if(article_id.value)doc.text("Artikel: "+article_id.value,10,26);
+  if(machine_id.value)doc.text("Maschine: "+machine_id.value,10,32);
 
   doc.setFont("helvetica","bold");
   doc.setFontSize(11);
@@ -692,18 +575,18 @@ function exportPDF(){
   doc.line(10,42,200,42);
 
   let y=48;
-  function row(a,b,c){
-    doc.text(a.padEnd(12)+" "+(b||"-")+"  "+(c||"-"),10,y);
+  function row(t,s,i){
+    doc.text((t||"")+" "+(s||"-")+"  "+(i||"-"),10,y);
     y+=5;
   }
   row("Z1 Pferch",z1P_soll.value,z1P_ist.value);
-  row("Z1 Hüll",z1H_soll.value,z1H_ist.value);
+  row("Z1 Huell",z1H_soll.value,z1H_ist.value);
   row("Z2 Pferch",z2P_soll.value,z2P_ist.value);
-  row("Z2 Hüll",z2H_soll.value,z2H_ist.value);
+  row("Z2 Huell",z2H_soll.value,z2H_ist.value);
 
   doc.setFont("helvetica","bold");
   doc.setFontSize(11);
-  doc.text("Berechnung / Offsets",10,y+6);
+  doc.text("Offsets",10,y+6);
   doc.line(10,y+8,200,y+8);
   y+=14;
 
@@ -712,8 +595,51 @@ function exportPDF(){
     doc.text(l,10,y); y+=5;
   });
 
-  doc.save("gear-offset-report.pdf");
+  // Offsets für QR lesen
+  const offX = F("learn_x");
+  const offZ = F("learn_z");
+  const offY = F("offsetY_std");
+
+  const qrText =
+    "Gear Offset 2050\n"+
+    "Artikel: "+(article_id.value||"-")+"\n"+
+    "Maschine: "+(machine_id.value||"-")+"\n"+
+    "X: "+offX.toFixed(2)+" mm\n"+
+    "Z: "+offZ.toFixed(2)+" mm\n"+
+    "Y: "+offY.toFixed(2)+" mm";
+
+  // QR-Code temporär erzeugen
+  const qrTemp = document.createElement("div");
+  new QRCode(qrTemp,{
+    text: qrText,
+    width:180,
+    height:180,
+    correctLevel:QRCode.CorrectLevel.H
+  });
+
+  let qrData=null;
+  const img=qrTemp.querySelector("img");
+  if(img && img.src){
+    qrData=img.src;
+  }else{
+    const canvas=qrTemp.querySelector("canvas");
+    if(canvas) qrData=canvas.toDataURL("image/png");
+  }
+
+  if(qrData){
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(8);
+    doc.text("QR scannen um Offsets auf dem Handy zu sehen", 120, 235);
+    doc.addImage(qrData,"PNG",150,240,40,40);
+  }
+
+  doc.save("gear-offset.pdf");
 }
+
+window.addEventListener("load",()=>{
+  const ys=loadYStd();
+  offsetY_std.value=ys.toFixed(3);
+});
 </script>
 
 </body>
