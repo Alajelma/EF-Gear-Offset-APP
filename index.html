@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -116,19 +117,6 @@ pre{
   color:#ffb347;
   font-weight:bold;
 }
-#qrcode{
-  width:260px;
-  height:260px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  margin-top:8px;
-}
-.info{
-  font-size:10px;
-  color:var(--muted);
-  margin-top:4px;
-}
 .header{
   display:flex;
   align-items:center;
@@ -154,6 +142,7 @@ pre{
 }
 </style>
 </head>
+
 <body>
 <div class="app">
 
@@ -168,7 +157,6 @@ pre{
 <div class="grid-main">
 
 <div>
-
   <div class="card">
     <h2>Stammdaten & Templates</h2>
 
@@ -311,8 +299,20 @@ function refreshTemplateList(){
 refreshTemplateList();
 
 function saveTemplate(){
-  const name=tplName.value.trim();
-  if(!name)return;
+  const currentKey = templateSelect.value;
+  const name = tplName.value.trim();
+
+  let keyToUse = "";
+
+  if(currentKey.startsWith("tpl_")){
+    keyToUse = currentKey;
+  } else if(name !== ""){
+    keyToUse = "tpl_" + name;
+  } else {
+    alert("Bitte Namen eingeben");
+    return;
+  }
+
   const d={
     article_id:article_id.value,
     machine_id:machine_id.value,
@@ -326,21 +326,37 @@ function saveTemplate(){
     y_enable:y_enable.value,
     offsetY_std:offsetY_std.value
   };
-  localStorage.setItem("tpl_"+name,JSON.stringify(d));
+
+  localStorage.setItem(keyToUse,JSON.stringify(d));
   refreshTemplateList();
+  templateSelect.value = keyToUse;
+  tplName.value = keyToUse.replace("tpl_","");
 }
 
 function loadTemplate(){
-  const key=templateSelect.value;
-  if(!key.startsWith("tpl_"))return;
-  const d=JSON.parse(localStorage.getItem(key));
+  const key = templateSelect.value;
+  if(!key.startsWith("tpl_")) return;
+
+  const d = JSON.parse(localStorage.getItem(key));
+
   Object.keys(d).forEach(k=>{
     const el=document.getElementById(k);
-    if(!el)return;
-    if(k==="y_enable"){setYMode(d[k]=="1");}
-    else el.value=d[k];
+    if(!el) return;
+
+    if(k==="y_enable"){
+      setYMode(d[k]=="1");
+    } else {
+      el.value=d[k];
+    }
   });
-  saveYStd(F("offsetY_std"));
+
+  if(d.offsetY_std !== undefined){
+    const yVal = parseFloat(d.offsetY_std) || 0;
+    offsetY_std.value = yVal.toFixed(3);
+    saveYStd(yVal);
+  }
+
+  tplName.value = key.replace("tpl_","");
 }
 
 function deleteTemplate(){
@@ -378,7 +394,6 @@ function applyLearning(){
   saveSamples(key,arr);
   factorStatus.textContent="gelernt";
 }
-
 function getModelKey(){
   const m=(machine_id.value||"").trim();
   const a=(article_id.value||"").trim();
@@ -595,7 +610,6 @@ function exportPDF(){
     doc.text(l,10,y); y+=5;
   });
 
-  // Offsets für QR lesen
   const offX = F("learn_x");
   const offZ = F("learn_z");
   const offY = F("offsetY_std");
@@ -608,7 +622,6 @@ function exportPDF(){
     "Z: "+offZ.toFixed(2)+" mm\n"+
     "Y: "+offY.toFixed(2)+" mm";
 
-  // QR-Code temporär erzeugen
   const qrTemp = document.createElement("div");
   new QRCode(qrTemp,{
     text: qrText,
