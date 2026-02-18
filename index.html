@@ -1,659 +1,1726 @@
-```html
-<!DOCTYPE html>
-<html lang="de">
+<!doctype html>
+<html lang="de-CH">
 <head>
-<meta charset="UTF-8">
-<title>Gear Offset 2050 – Lernende Verzahnungs-Korrektur</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AntaBau und Hess • Wohnungsverkauf Dashboard</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-<style>
-:root {
-  --bg: #05060a;
-  --panel: #0b1024cc;
-  --accent: #4fd1ff;
-  --text: #eef5ff;
-  --muted: #9bb2cc;
-  --border: #2a3558;
-}
-*{box-sizing:border-box;}
-body{
-  margin:0;
-  background:radial-gradient(circle at top,#11172f,#05060a 60%);
-  color:var(--text);
-  font-family:-apple-system,system-ui,Segoe UI,sans-serif;
-  padding:10px;
-}
-.app{
-  max-width:1200px;
-  margin:0 auto;
-}
-.card{
-  background:var(--panel);
-  padding:12px;
-  border-radius:14px;
-  margin-bottom:12px;
-  border:1px solid var(--border);
-  backdrop-filter:blur(16px);
-}
-h2{
-  margin:0 0 8px 0;
-  color:var(--accent);
-  font-size:13px;
-  text-transform:uppercase;
-  letter-spacing:0.16em;
-}
-label{
-  color:var(--muted);
-  font-size:11px;
-  display:block;
-  margin-bottom:2px;
-}
-input,textarea,select{
-  width:100%;
-  padding:5px 8px;
-  border-radius:8px;
-  border:1px solid #3a4a6b;
-  background:#060917cc;
-  color:var(--text);
-  margin-bottom:6px;
-  font-size:12px;
-}
-button{
-  padding:5px 10px;
-  border-radius:10px;
-  border:1px solid var(--accent);
-  background:#0c1430cc;
-  color:var(--text);
-  font-size:10px;
-  letter-spacing:0.10em;
-  text-transform:uppercase;
-  cursor:pointer;
-}
-button.secondary{
-  border-color:#3a4a6b;
-  background:#080d1bcc;
-}
-button.y-off{
-  border-color:#ff4b6a;
-  color:#ff4b6a;
-  background:#14060acc;
-}
-button.y-on{
-  border-color:#32d675;
-  color:#32d675;
-  background:#05150bcc;
-}
-button.y-active{
-  box-shadow:0 0 10px rgba(50,214,117,0.6);
-}
-.grid-main{
-  display:grid;
-  grid-template-columns:1.2fr 1fr;
-  gap:10px;
-}
-.grid-2-small{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-}
-.grid-4-small{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:6px;
-}
-pre{
-  background:#060917dd;
-  padding:8px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  white-space:pre-wrap;
-  font-size:11px;
-  margin:0;
-}
-.orange{
-  color:#ffb347;
-  font-weight:bold;
-}
-.header{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:10px;
-}
-.header img{
-  height:44px;
-  border-radius:8px;
-}
-.header-title{
-  color:var(--accent);
-  font-size:14px;
-  letter-spacing:0.14em;
-  text-transform:uppercase;
-}
-.header-sub{
-  color:var(--muted);
-  font-size:10px;
-}
-@media(max-width:900px){
-  .grid-main{grid-template-columns:1fr;}
-}
-</style>
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- SheetJS (XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- jsPDF + autoTable -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+    .no-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
+
+    .chip { display:inline-flex; align-items:center; gap:.4rem; padding:.22rem .55rem; border-radius:999px; font-weight:600; font-size:.78rem; }
+    .chip-frei { background: rgba(16,185,129,.16); color: rgb(16,185,129); border: 1px solid rgba(16,185,129,.25); }
+    .chip-res { background: rgba(245,158,11,.18); color: rgb(245,158,11); border: 1px solid rgba(245,158,11,.28); }
+    .chip-sold { background: rgba(239,68,68,.16); color: rgb(239,68,68); border: 1px solid rgba(239,68,68,.25); }
+
+    .modal-backdrop { background: rgba(0,0,0,.55); }
+    .shadow-soft { box-shadow: 0 10px 35px rgba(0,0,0,.14); }
+    .row-hover:hover { transform: translateY(-1px); }
+  </style>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { borderRadius: { '2xl': '1.25rem' } } }
+    }
+  </script>
 </head>
 
-<body>
-<div class="app">
-
-<div class="header">
-  <img src="logo.jpg" alt="Logo">
-  <div>
-    <div class="header-title">Gear Offset 2050</div>
-    <div class="header-sub">Verzahnung • Lernende Fanuc-Korrektur • DFQ • PDF</div>
-  </div>
-</div>
-
-<div class="grid-main">
-
-<div>
-  <div class="card">
-    <h2>Stammdaten & Templates</h2>
-
-    <div class="grid-2-small">
-      <div><label>Artikel</label><input id="article_id"></div>
-      <div><label>Maschine</label><input id="machine_id"></div>
-    </div>
-
-    <div class="grid-2-small">
-      <div><label>Template Auswahl</label><select id="templateSelect"></select></div>
-      <div><label>Name speichern</label><input id="tplName"></div>
-    </div>
-
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-      <button class="secondary" onclick="saveTemplate()">Speichern</button>
-      <button class="secondary" onclick="loadTemplate()">Laden</button>
-      <button class="secondary" onclick="deleteTemplate()">Loeschen</button>
-    </div>
-
-    <textarea id="tplJson" rows="2"></textarea>
-  </div>
-
-  <div class="card">
-    <h2>Soll / Ist</h2>
-
-    <div class="grid-4-small">
-      <div><label>Z1 Pferch Soll</label><input id="z1P_soll"></div>
-      <div><label>Z1 Huell Soll</label><input id="z1H_soll"></div>
-      <div><label>Z2 Pferch Soll</label><input id="z2P_soll"></div>
-      <div><label>Z2 Huell Soll</label><input id="z2H_soll"></div>
-    </div>
-
-    <div class="grid-4-small">
-      <div><label>Z1 Pferch Ist</label><input id="z1P_ist"></div>
-      <div><label>Z1 Huell Ist</label><input id="z1H_ist"></div>
-      <div><label>Z2 Pferch Ist</label><input id="z2P_ist"></div>
-      <div><label>Z2 Huell Ist</label><input id="z2H_ist"></div>
-    </div>
-
-    <div class="grid-2-small">
-      <div><label>Z1 Position</label><input id="z1_pos"></div>
-      <div><label>Z2 Position</label><input id="z2_pos"></div>
-    </div>
-
-    <div class="grid-2-small">
-      <div><label>Fraeserwinkel</label><input id="winkel" value="55"></div>
-      <div>
-        <label>Y-Modus</label>
-        <div style="display:flex;gap:4px;">
-          <button id="yOffBtn" class="y-off y-active" onclick="setYMode(false)">Y AUS</button>
-          <button id="yOnBtn" class="y-on" onclick="setYMode(true)">Y EIN</button>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
+  <div class="min-h-screen">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-40 border-b border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-950/60 glass">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 flex items-center justify-center text-white shadow-soft">
+            <i class="fa-solid fa-building"></i>
+          </div>
+          <div class="leading-tight">
+            <div class="text-sm text-slate-500 dark:text-slate-400">AntaBau und Hess</div>
+            <h1 class="text-lg font-semibold" data-i18n="hdr.title">Wohnungsverkauf • Übersicht und Tracking</h1>
+          </div>
         </div>
-        <input id="y_enable" type="hidden" value="0">
+
+        <div class="flex items-center gap-2">
+          <!-- Language -->
+          <select id="langSelect"
+            class="px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:opacity-90 transition text-sm font-semibold">
+            <option value="de">Deutsch</option>
+            <option value="en">English</option>
+            <option value="sq">Shqip</option>
+          </select>
+
+          <button id="btnTheme" class="px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:opacity-90 transition flex items-center gap-2">
+            <i class="fa-solid fa-moon"></i>
+            <span class="text-sm font-semibold" data-i18n="btn.dark">Dark</span>
+          </button>
+
+          <button id="btnSave" class="px-3 py-2 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-2 shadow-soft">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span class="text-sm font-semibold" data-i18n="btn.save">Speichern</span>
+          </button>
+
+          <div class="relative">
+            <button id="btnMore" class="px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:opacity-90 transition flex items-center gap-2">
+              <i class="fa-solid fa-ellipsis"></i>
+              <span class="text-sm font-semibold" data-i18n="hdr.export">Export</span>
+            </button>
+
+            <div id="menuMore" class="hidden absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft overflow-hidden">
+              <button id="btnExportExcel" class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-3">
+                <i class="fa-solid fa-file-excel text-emerald-500"></i>
+                <div>
+                  <div class="font-semibold text-sm" data-i18n="btn.excel">Backup als Excel</div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="desc.excel">XLSX mit allen Wohnungen</div>
+                </div>
+              </button>
+
+              <button id="btnExportPDF" class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-3">
+                <i class="fa-solid fa-file-pdf text-red-500"></i>
+                <div>
+                  <div class="font-semibold text-sm" data-i18n="btn.pdf_overview">PDF Gesamtübersicht</div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="desc.pdf">sauber formatiert zum Drucken</div>
+                </div>
+              </button>
+
+              <button id="btnExportJSON" class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-3">
+                <i class="fa-solid fa-box-archive text-slate-500"></i>
+                <div>
+                  <div class="font-semibold text-sm" data-i18n="btn.json_backup">Backup als JSON</div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="desc.json">ideal für manuelle Sicherung</div>
+                </div>
+              </button>
+
+              <label class="w-full cursor-pointer px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-3">
+                <i class="fa-solid fa-upload text-slate-500"></i>
+                <div>
+                  <div class="font-semibold text-sm" data-i18n="btn.json_import">JSON Import</div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="desc.json_import">Backup wieder einspielen</div>
+                </div>
+                <input id="fileImportJSON" type="file" accept="application/json" class="hidden" />
+              </label>
+
+              <div class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800" data-i18n="desc.tip">
+                Tipp: Speichern schreibt in den Browser. Export ist dein externer Backup.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <!-- KPIs -->
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" data-i18n="kpi.free">Frei</div>
+              <div id="kpiFrei" class="text-2xl font-bold mt-1">0</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="kpi.free_sub">noch verfügbar</div>
+            </div>
+            <div class="h-10 w-10 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+              <i class="fa-solid fa-door-open"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" data-i18n="kpi.reserved">Reserviert</div>
+              <div id="kpiRes" class="text-2xl font-bold mt-1">0</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="kpi.reserved_sub">in Bearbeitung</div>
+            </div>
+            <div class="h-10 w-10 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center">
+              <i class="fa-solid fa-handshake"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" data-i18n="kpi.sold">Verkauft</div>
+              <div id="kpiSold" class="text-2xl font-bold mt-1">0</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="kpi.sold_sub">abgeschlossen</div>
+            </div>
+            <div class="h-10 w-10 rounded-2xl bg-red-500/15 text-red-500 flex items-center justify-center">
+              <i class="fa-solid fa-check"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" data-i18n="kpi.revenue">Einnahmen</div>
+              <div id="kpiPaid" class="text-2xl font-bold mt-1">€ 0</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="kpi.revenue_sub">bezahlt (Anzahlungen + Kaufpreise)</div>
+            </div>
+            <div class="h-10 w-10 rounded-2xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts -->
+      <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft xl:col-span-1">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold" data-i18n="chart.status_title">Status Übersicht</h2>
+            <span class="text-xs text-slate-500 dark:text-slate-400" data-i18n="chart.status_sub">Motivation in Echtzeit</span>
+          </div>
+          <div class="mt-3">
+            <canvas id="chartStatus" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft xl:col-span-2">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="font-semibold" data-i18n="chart.money_title">Finanzen</h2>
+            <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="chart.money_sub">
+              bezahlt vs offen (auf Basis Preis und Zahlungen)
+            </div>
+          </div>
+          <div class="mt-3">
+            <canvas id="chartMoney" height="220"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Controls + Table -->
+      <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="text-sm font-semibold" data-i18n="tbl.title">Wohnungen</div>
+            <span id="pillCount" class="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">0</span>
+
+            <button id="btnAdd" class="ml-2 px-3 py-2 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition flex items-center gap-2">
+              <i class="fa-solid fa-plus"></i>
+              <span class="text-sm font-semibold" data-i18n="btn.add_apartment">Wohnung hinzufügen</span>
+            </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input id="search" class="pl-9 pr-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 w-full sm:w-72 outline-none focus:ring-2 focus:ring-indigo-500/30"
+                     data-i18n-ph="ph.search"
+                     placeholder="Suche: Nr, Käufer, Status, Notizen" />
+            </div>
+
+            <select id="filterStatus" class="px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/30">
+              <option value="alle">Status: alle</option>
+              <option value="frei">frei</option>
+              <option value="reserviert">reserviert</option>
+              <option value="verkauft">verkauft</option>
+            </select>
+
+            <select id="sortBy" class="px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/30">
+              <option value="nr" data-i18n="sort.nr">Sortieren: Nr</option>
+              <option value="status" data-i18n="sort.status">Sortieren: Status</option>
+              <option value="preis_desc" data-i18n="sort.price_desc">Sortieren: Preis ↓</option>
+              <option value="preis_asc" data-i18n="sort.price_asc">Sortieren: Preis ↑</option>
+              <option value="paid_desc" data-i18n="sort.paid_desc">Sortieren: Bezahlt ↓</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4 overflow-auto no-scrollbar">
+          <table class="w-full min-w-[1050px] text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                <th class="py-3 pr-3" data-i18n="tbl.nr">Nr</th>
+                <th class="py-3 pr-3" data-i18n="tbl.type">Typ</th>
+                <th class="py-3 pr-3" data-i18n="tbl.area">m²</th>
+                <th class="py-3 pr-3" data-i18n="tbl.rooms">Zimmer</th>
+                <th class="py-3 pr-3" data-i18n="tbl.price">Preis</th>
+                <th class="py-3 pr-3" data-i18n="tbl.paid">Bezahlt</th>
+                <th class="py-3 pr-3" data-i18n="tbl.open">Offen</th>
+                <th class="py-3 pr-3" data-i18n="tbl.status">Status</th>
+                <th class="py-3 pr-3" data-i18n="tbl.buyer">Käufer</th>
+                <th class="py-3 pr-3" data-i18n="tbl.notary_cadastre">Notar/Kataster</th>
+                <th class="py-3 pr-3" data-i18n="tbl.actions">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-3 text-xs text-slate-500 dark:text-slate-400" data-i18n="desc.dblclick">
+          Doppelklick auf eine Zeile öffnet den Bearbeitungsmodus im Vordergrundfenster
+        </div>
+      </section>
+
+      <section class="text-xs text-slate-500 dark:text-slate-400 pb-10" data-i18n="desc.footer">
+        Hinweise: Bilder werden als Data-URL gespeichert und können bei vielen Fotos den Browser-Speicher füllen.
+        Für grosse Projekte wäre später eine kleine Serverlösung sinnvoll, dieses Dashboard ist aber bewusst offline-first.
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="hidden fixed inset-0 z-50">
+    <div class="absolute inset-0 modal-backdrop"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="w-full max-w-5xl rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-soft overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 flex items-center justify-center">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="modal.edit">Bearbeiten</div>
+              <div id="modalTitle" class="font-semibold">Wohnung</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnRowPDF" class="px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:opacity-90 transition flex items-center gap-2">
+              <i class="fa-solid fa-file-pdf text-red-500"></i>
+              <span class="text-sm font-semibold" data-i18n="btn.pdf">PDF</span>
+            </button>
+            <button id="btnCloseModal" class="px-3 py-2 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition" data-i18n="btn.close">
+              Schliessen
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3">
+          <!-- Left: form -->
+          <div class="lg:col-span-2 p-4 space-y-4 max-h-[75vh] overflow-auto no-scrollbar">
+            <!-- Tabs -->
+            <div class="flex gap-2 flex-wrap">
+              <button data-tab="details" class="tabBtn px-3 py-2 rounded-2xl bg-indigo-600 text-white text-sm font-semibold" data-i18n="tab.details">Details</button>
+              <button data-tab="buyer" class="tabBtn px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm font-semibold" data-i18n="tab.buyer">Käufer</button>
+              <button data-tab="check" class="tabBtn px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm font-semibold" data-i18n="tab.check">Checkliste</button>
+              <button data-tab="images" class="tabBtn px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm font-semibold" data-i18n="tab.images">Bilder</button>
+            </div>
+
+            <!-- Details -->
+            <div id="tab-details" class="tabPane space-y-3">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.nr">Wohnungsnummer</label>
+                  <input id="f_nr" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.status">Status</label>
+                  <select id="f_status" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none">
+                    <option value="frei">frei</option>
+                    <option value="reserviert">reserviert</option>
+                    <option value="verkauft">verkauft</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.type">Typ (zB 2.5 Zi)</label>
+                  <input id="f_typ" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.floor">Stockwerk</label>
+                  <input id="f_floor" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.area">Wohnfläche m²</label>
+                  <input id="f_area" type="number" step="0.1" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.rooms">Zimmer</label>
+                  <input id="f_rooms" type="number" step="0.5" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.price">Preis (EUR)</label>
+                  <input id="f_price" type="number" step="1" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.paid">Bezahlt (EUR)</label>
+                  <input id="f_paid" type="number" step="1" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.notes">Notizen</label>
+                  <textarea id="f_notes" rows="3" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Buyer -->
+            <div id="tab-buyer" class="tabPane hidden space-y-3">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.buyer_name">Käufer Name</label>
+                  <input id="f_buyerName" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.buyer_phone">Telefon</label>
+                  <input id="f_buyerPhone" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.buyer_email">E-Mail</label>
+                  <input id="f_buyerEmail" type="email" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.res_date">Reservation Datum</label>
+                  <input id="f_resDate" type="date" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.buyer_id">ID/Pass (optional)</label>
+                  <input id="f_buyerId" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.buyer_address">Adresse (optional)</label>
+                  <input id="f_buyerAddress" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Checklist -->
+            <div id="tab-check" class="tabPane hidden space-y-4">
+              <div class="rounded-2xl border border-slate-200 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-900/40">
+                <div class="text-sm font-semibold" data-i18n="check.title">Transaktions-Checkliste (Nordmazedonien)</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="check.sub">
+                  Typisch: Vorvertrag/Reservation, notarielle Beurkundung, Steuer/Transfer Tax, Kataster-Eintrag, Übergabe.
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label class="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+                  <input id="c_dueDiligence" type="checkbox" class="h-4 w-4" />
+                  <div>
+                    <div class="text-sm font-semibold" data-i18n="check.due">Due Diligence / Lastenfreiheit</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="check.due_sub">Eigentum, Hypotheken, Belastungen prüfen</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+                  <input id="c_preContract" type="checkbox" class="h-4 w-4" />
+                  <div>
+                    <div class="text-sm font-semibold" data-i18n="check.pre">Vorvertrag / Reservation</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="check.pre_sub">schriftlich, oft Anzahlung</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+                  <input id="c_notary" type="checkbox" class="h-4 w-4" />
+                  <div>
+                    <div class="text-sm font-semibold" data-i18n="check.notary">Notar unterschrieben</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="check.notary_sub">Kaufvertrag beurkundet</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+                  <input id="c_tax" type="checkbox" class="h-4 w-4" />
+                  <div>
+                    <div class="text-sm font-semibold" data-i18n="check.tax">Transfer Tax / Gemeinde erledigt</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="check.tax_sub">je nach Gemeinde</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+                  <input id="c_cadastre" type="checkbox" class="h-4 w-4" />
+                  <div>
+                    <div class="text-sm font-semibold" data-i18n="check.cad">Kataster-Eintrag erfolgt</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="check.cad_sub">Eigentümerwechsel registriert</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+                  <input id="c_handover" type="checkbox" class="h-4 w-4" />
+                  <div>
+                    <div class="text-sm font-semibold" data-i18n="check.hand">Übergabe / Protokoll</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="check.hand_sub">Schlüssel, Zählerstände, Mängel</div>
+                  </div>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.notary_name">Notar Name</label>
+                  <input id="f_notaryName" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="field.notary_date">Notar Datum</label>
+                  <input id="f_notaryDate" type="date" class="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Images -->
+            <div id="tab-images" class="tabPane hidden space-y-3">
+              <div class="rounded-2xl border border-slate-200 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-900/40">
+                <div class="text-sm font-semibold" data-i18n="img.title">Bilder zur Wohnung</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="img.sub">
+                  Upload speichert Bilder lokal im Browser. Für viele Fotos später besser mit Server/Cloud.
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between gap-3">
+                <label class="cursor-pointer px-3 py-2 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition flex items-center gap-2">
+                  <i class="fa-solid fa-image"></i>
+                  <span class="text-sm font-semibold" data-i18n="btn.upload_images">Bilder hochladen</span>
+                  <input id="fileImages" type="file" accept="image/*" multiple class="hidden" />
+                </label>
+
+                <button id="btnClearImages" class="px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:opacity-90 transition text-sm font-semibold" data-i18n="btn.clear_images">
+                  Bilder entfernen
+                </button>
+              </div>
+
+              <div id="imageGrid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+              <button id="btnDeleteRow" class="px-3 py-2 rounded-2xl border border-red-200 dark:border-red-900 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition text-sm font-semibold" data-i18n="btn.delete">
+                Löschen
+              </button>
+              <button id="btnSaveRow" class="px-4 py-2 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition text-sm font-semibold shadow-soft" data-i18n="btn.save_changes">
+                Änderungen speichern
+              </button>
+            </div>
+          </div>
+
+          <!-- Right -->
+          <aside class="lg:col-span-1 p-4 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30">
+            <div class="space-y-4">
+              <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-3">
+                <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="side.quick">Kurzinfo</div>
+                <div id="sideStatus" class="mt-2"></div>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 p-2">
+                    <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="side.price">Preis</div>
+                    <div id="sidePrice" class="font-semibold">€ 0</div>
+                  </div>
+                  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 p-2">
+                    <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="side.open">Offen</div>
+                    <div id="sideOpen" class="font-semibold">€ 0</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-3">
+                <div class="text-sm font-semibold" data-i18n="side.todo">To-do (automatisch)</div>
+                <ul id="todoList" class="mt-2 text-sm space-y-2"></ul>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
-
-    <div class="grid-2-small">
-      <div><label>Y Standard</label><input id="offsetY_std"></div>
-      <div><label>Vorschlag</label><div id="yStdSuggest" class="orange"></div></div>
-    </div>
   </div>
-
-  <div class="card">
-    <h2>DFQ</h2>
-    <div class="grid-2-small">
-      <div><input id="dfqFile" type="file" accept=".dfq,.txt"></div>
-      <div style="display:flex;align-items:flex-end;"><button class="secondary" onclick="parseDFQ()">DFQ laden</button></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Lernen</h2>
-
-    <div class="grid-2-small">
-      <div><label>Korr X</label><input id="learn_x"></div>
-      <div><label>Korr Y</label><input id="learn_y"></div>
-    </div>
-
-    <div class="grid-2-small">
-      <div><label>Korr Z</label><input id="learn_z"></div>
-      <div></div>
-    </div>
-
-    <div style="display:flex;gap:6px;">
-      <button class="secondary" onclick="saveLearnStart()">Start speichern</button>
-      <button class="secondary" onclick="applyLearning()">Lernen</button>
-    </div>
-
-    <div id="factorStatus" class="info"></div>
-  </div>
-
-</div>
-
-<div>
-
-  <div class="card">
-    <h2>Berechnung</h2>
-    <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="calculate(false)">Berechnen</button>
-      <button class="secondary" onclick="exportPDF()">PDF</button>
-    </div>
-    <pre id="result">Noch keine Berechnung</pre>
-  </div>
-
-  <div class="card">
-    <h2>Fanuc Wear</h2>
-    <pre id="fanucOut">Noch keine Daten</pre>
-  </div>
-
-</div>
-
-</div>
 
 <script>
-function F(id){
-  const el=document.getElementById(id);
-  if(!el) return 0;
-  const raw=(el.value||"").toString().replace(",",".");
-  const v=parseFloat(raw);
-  return isNaN(v)?0:v;
-}
-
-function refreshTemplateList(){
-  templateSelect.innerHTML="";
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith("tpl_"));
-  if(keys.length===0){
-    const opt=document.createElement("option");
-    opt.textContent="Kein Template";
-    templateSelect.appendChild(opt);
-    return;
-  }
-  keys.forEach(k=>{
-    const d=JSON.parse(localStorage.getItem(k));
-    const opt=document.createElement("option");
-    opt.value=k;
-    opt.textContent=(d.machine_id||"?")+" | "+(d.article_id||k.replace("tpl_",""));
-    templateSelect.appendChild(opt);
-  });
-}
-refreshTemplateList();
-
-function saveTemplate(){
-  const currentKey = templateSelect.value;
-  const name = tplName.value.trim();
-
-  let keyToUse = "";
-
-  if(currentKey.startsWith("tpl_")){
-    keyToUse = currentKey;
-  } else if(name !== ""){
-    keyToUse = "tpl_" + name;
-  } else {
-    alert("Bitte Namen eingeben");
-    return;
-  }
-
-  const d={
-    article_id:article_id.value,
-    machine_id:machine_id.value,
-    z1P_soll:z1P_soll.value,
-    z1H_soll:z1H_soll.value,
-    z2P_soll:z2P_soll.value,
-    z2H_soll:z2H_soll.value,
-    z1_pos:z1_pos.value,
-    z2_pos:z2_pos.value,
-    winkel:winkel.value,
-    y_enable:y_enable.value,
-    offsetY_std:offsetY_std.value
-  };
-
-  localStorage.setItem(keyToUse,JSON.stringify(d));
-  refreshTemplateList();
-  templateSelect.value = keyToUse;
-  tplName.value = keyToUse.replace("tpl_","");
-}
-
-function loadTemplate(){
-  const key = templateSelect.value;
-  if(!key.startsWith("tpl_")) return;
-
-  const d = JSON.parse(localStorage.getItem(key));
-
-  Object.keys(d).forEach(k=>{
-    const el=document.getElementById(k);
-    if(!el) return;
-
-    if(k==="y_enable"){
-      setYMode(d[k]=="1");
-    } else {
-      el.value=d[k];
+/* =========================
+   i18n
+   ========================= */
+const I18N = {
+  de: {
+    hdr: { title: "Wohnungsverkauf • Übersicht und Tracking", export: "Export" },
+    btn: {
+      save:"Speichern", excel:"Backup als Excel", pdf_overview:"PDF Gesamtübersicht",
+      json_backup:"Backup als JSON", json_import:"JSON Import",
+      add_apartment:"Wohnung hinzufügen", edit:"Bearbeiten",
+      close:"Schliessen", pdf:"PDF",
+      save_changes:"Änderungen speichern", delete:"Löschen",
+      upload_images:"Bilder hochladen", clear_images:"Bilder entfernen",
+      make_pdf:"PDF erstellen", dark:"Dark"
+    },
+    desc: {
+      excel:"XLSX mit allen Wohnungen",
+      pdf:"sauber formatiert zum Drucken",
+      json:"ideal für manuelle Sicherung",
+      json_import:"Backup wieder einspielen",
+      tip:"Tipp: Speichern schreibt in den Browser. Export ist dein externer Backup.",
+      dblclick:"Doppelklick auf eine Zeile öffnet den Bearbeitungsmodus im Vordergrundfenster",
+      footer:"Hinweise: Bilder werden als Data-URL gespeichert und können bei vielen Fotos den Browser-Speicher füllen. Für grosse Projekte wäre später eine kleine Serverlösung sinnvoll, dieses Dashboard ist aber bewusst offline-first."
+    },
+    kpi: {
+      free:"Frei", free_sub:"noch verfügbar",
+      reserved:"Reserviert", reserved_sub:"in Bearbeitung",
+      sold:"Verkauft", sold_sub:"abgeschlossen",
+      revenue:"Einnahmen", revenue_sub:"bezahlt (Anzahlungen + Kaufpreise)"
+    },
+    chart: {
+      status_title:"Status Übersicht", status_sub:"Motivation in Echtzeit",
+      money_title:"Finanzen", money_sub:"bezahlt vs offen (auf Basis Preis und Zahlungen)"
+    },
+    tbl: {
+      title:"Wohnungen",
+      nr:"Nr", type:"Typ", area:"m²", rooms:"Zimmer", price:"Preis", paid:"Bezahlt", open:"Offen",
+      status:"Status", buyer:"Käufer", notary_cadastre:"Notar/Kataster", actions:"Aktionen"
+    },
+    ph: { search:"Suche: Nr, Käufer, Status, Notizen" },
+    sort: {
+      nr:"Sortieren: Nr", status:"Sortieren: Status",
+      price_desc:"Sortieren: Preis ↓", price_asc:"Sortieren: Preis ↑",
+      paid_desc:"Sortieren: Bezahlt ↓"
+    },
+    status: { frei:"frei", reserviert:"reserviert", verkauft:"verkauft" },
+    modal: { edit:"Bearbeiten" },
+    tab: { details:"Details", buyer:"Käufer", check:"Checkliste", images:"Bilder" },
+    field: {
+      nr:"Wohnungsnummer",
+      status:"Status",
+      type:"Typ (zB 2.5 Zi)",
+      floor:"Stockwerk",
+      area:"Wohnfläche m²",
+      rooms:"Zimmer",
+      price:"Preis (EUR)",
+      paid:"Bezahlt (EUR)",
+      notes:"Notizen",
+      buyer_name:"Käufer Name",
+      buyer_phone:"Telefon",
+      buyer_email:"E-Mail",
+      res_date:"Reservation Datum",
+      buyer_id:"ID/Pass (optional)",
+      buyer_address:"Adresse (optional)",
+      notary_name:"Notar Name",
+      notary_date:"Notar Datum"
+    },
+    check: {
+      title:"Transaktions-Checkliste (Nordmazedonien)",
+      sub:"Typisch: Vorvertrag/Reservation, notarielle Beurkundung, Steuer/Transfer Tax, Kataster-Eintrag, Übergabe.",
+      due:"Due Diligence / Lastenfreiheit", due_sub:"Eigentum, Hypotheken, Belastungen prüfen",
+      pre:"Vorvertrag / Reservation", pre_sub:"schriftlich, oft Anzahlung",
+      notary:"Notar unterschrieben", notary_sub:"Kaufvertrag beurkundet",
+      tax:"Transfer Tax / Gemeinde erledigt", tax_sub:"je nach Gemeinde",
+      cad:"Kataster-Eintrag erfolgt", cad_sub:"Eigentümerwechsel registriert",
+      hand:"Übergabe / Protokoll", hand_sub:"Schlüssel, Zählerstände, Mängel"
+    },
+    img: {
+      title:"Bilder zur Wohnung",
+      sub:"Upload speichert Bilder lokal im Browser. Für viele Fotos später besser mit Server/Cloud."
+    },
+    side: {
+      quick:"Kurzinfo", price:"Preis", open:"Offen",
+      todo:"To-do (automatisch)"
+    },
+    misc: {
+      none:"—", notary:"Notar", cadastre:"Kataster",
+      all_done:"Alles erledigt"
+    },
+    pdf: {
+      apt_title:(nr)=>`Wohnung ${nr} • AntaBau und Hess`,
+      overview_title:"Wohnungsverkauf • Gesamtübersicht",
+      created:"Erstellt",
+      field:"Feld", value:"Wert",
+      kpis:"KPIs",
+      checklist_open:"Checkliste (offen)",
+      notes:"Notizen",
+      labels: {
+        status:"Status",
+        typ:"Typ",
+        floor:"Stockwerk",
+        area:"Wohnfläche (m²)",
+        rooms:"Zimmer",
+        price:"Preis (EUR)",
+        paid:"Bezahlt (EUR)",
+        open:"Offen (EUR)",
+        buyer:"Käufer",
+        phone:"Telefon",
+        email:"E-Mail",
+        resDate:"Reservation Datum",
+        notary:"Notar",
+        notaryDate:"Notar Datum"
+      }
+    },
+    todo: {
+      due:"Due Diligence / Lastenfreiheit",
+      pre:"Vorvertrag / Reservation",
+      notary:"Notar unterschrieben",
+      tax:"Transfer Tax / Gemeinde",
+      cad:"Kataster-Eintrag",
+      hand:"Übergabe / Protokoll"
     }
+  },
+
+  en: {
+    hdr: { title: "Sales • Overview and Tracking", export: "Export" },
+    btn: {
+      save:"Save", excel:"Backup to Excel", pdf_overview:"PDF overview",
+      json_backup:"Backup as JSON", json_import:"Import JSON",
+      add_apartment:"Add apartment", edit:"Edit",
+      close:"Close", pdf:"PDF",
+      save_changes:"Save changes", delete:"Delete",
+      upload_images:"Upload images", clear_images:"Remove images",
+      make_pdf:"Create PDF", dark:"Dark"
+    },
+    desc: {
+      excel:"XLSX with all apartments",
+      pdf:"print-ready formatting",
+      json:"good for manual backup",
+      json_import:"restore from backup",
+      tip:"Tip: Save writes to the browser. Export is your external backup.",
+      dblclick:"Double-click a row to open the editor modal",
+      footer:"Notes: Images are stored as Data-URLs and may fill browser storage. For big projects a small server is recommended, this dashboard is offline-first."
+    },
+    kpi: {
+      free:"Available", free_sub:"still available",
+      reserved:"Reserved", reserved_sub:"in progress",
+      sold:"Sold", sold_sub:"completed",
+      revenue:"Revenue", revenue_sub:"paid (deposits + prices)"
+    },
+    chart: {
+      status_title:"Status overview", status_sub:"real-time motivation",
+      money_title:"Finance", money_sub:"paid vs open (based on price and payments)"
+    },
+    tbl: {
+      title:"Apartments",
+      nr:"No", type:"Type", area:"m²", rooms:"Rooms", price:"Price", paid:"Paid", open:"Open",
+      status:"Status", buyer:"Buyer", notary_cadastre:"Notary/Cadastre", actions:"Actions"
+    },
+    ph: { search:"Search: No, buyer, status, notes" },
+    sort: {
+      nr:"Sort: No", status:"Sort: Status",
+      price_desc:"Sort: Price ↓", price_asc:"Sort: Price ↑",
+      paid_desc:"Sort: Paid ↓"
+    },
+    status: { frei:"available", reserviert:"reserved", verkauft:"sold" },
+    modal: { edit:"Edit" },
+    tab: { details:"Details", buyer:"Buyer", check:"Checklist", images:"Images" },
+    field: {
+      nr:"Apartment number",
+      status:"Status",
+      type:"Type (eg 2BR)",
+      floor:"Floor",
+      area:"Area m²",
+      rooms:"Rooms",
+      price:"Price (EUR)",
+      paid:"Paid (EUR)",
+      notes:"Notes",
+      buyer_name:"Buyer name",
+      buyer_phone:"Phone",
+      buyer_email:"Email",
+      res_date:"Reservation date",
+      buyer_id:"ID/Passport (optional)",
+      buyer_address:"Address (optional)",
+      notary_name:"Notary name",
+      notary_date:"Notary date"
+    },
+    check: {
+      title:"Transaction checklist (North Macedonia)",
+      sub:"Typical: reservation/pre-contract, notarisation, tax/transfer, cadastre registration, handover.",
+      due:"Due diligence / clear title", due_sub:"ownership, mortgages, liens",
+      pre:"Pre-contract / reservation", pre_sub:"written, often deposit",
+      notary:"Signed by notary", notary_sub:"contract notarised",
+      tax:"Transfer tax handled", tax_sub:"depends on municipality",
+      cad:"Cadastre registration done", cad_sub:"ownership change registered",
+      hand:"Handover / protocol", hand_sub:"keys, meters, defects"
+    },
+    img: {
+      title:"Apartment images",
+      sub:"Upload stores images locally in the browser. For many photos use a server/cloud later."
+    },
+    side: {
+      quick:"Quick info", price:"Price", open:"Open",
+      todo:"To-do (auto)"
+    },
+    misc: {
+      none:"—", notary:"Notary", cadastre:"Cadastre",
+      all_done:"All done"
+    },
+    pdf: {
+      apt_title:(nr)=>`Apartment ${nr} • AntaBau and Hess`,
+      overview_title:"Sales • Overview",
+      created:"Created",
+      field:"Field", value:"Value",
+      kpis:"KPIs",
+      checklist_open:"Checklist (open)",
+      notes:"Notes",
+      labels: {
+        status:"Status",
+        typ:"Type",
+        floor:"Floor",
+        area:"Area (m²)",
+        rooms:"Rooms",
+        price:"Price (EUR)",
+        paid:"Paid (EUR)",
+        open:"Open (EUR)",
+        buyer:"Buyer",
+        phone:"Phone",
+        email:"Email",
+        resDate:"Reservation date",
+        notary:"Notary",
+        notaryDate:"Notary date"
+      }
+    },
+    todo: {
+      due:"Due diligence / clear title",
+      pre:"Pre-contract / reservation",
+      notary:"Signed by notary",
+      tax:"Transfer tax",
+      cad:"Cadastre registration",
+      hand:"Handover / protocol"
+    }
+  },
+
+  sq: {
+    hdr: { title: "Shitje • Përmbledhje dhe Tracking", export: "Eksport" },
+    btn: {
+      save:"Ruaj", excel:"Backup në Excel", pdf_overview:"PDF përmbledhje",
+      json_backup:"Backup si JSON", json_import:"Import JSON",
+      add_apartment:"Shto apartament", edit:"Redakto",
+      close:"Mbyll", pdf:"PDF",
+      save_changes:"Ruaj ndryshimet", delete:"Fshi",
+      upload_images:"Ngarko foto", clear_images:"Hiq fotot",
+      make_pdf:"Krijo PDF", dark:"Dark"
+    },
+    desc: {
+      excel:"XLSX me të gjitha apartamentet",
+      pdf:"formatim për printim",
+      json:"i mirë për backup manual",
+      json_import:"rikthe nga backup",
+      tip:"Këshillë: Ruaj shkruan në shfletues. Eksporti është backup jashtë.",
+      dblclick:"Dopjo-klik mbi rresht hap redaktimin",
+      footer:"Shënim: Fotot ruhen si Data-URL dhe mund të mbushin memorien e shfletuesit. Për projekte të mëdha rekomandohet server, ky dashboard është offline-first."
+    },
+    kpi: {
+      free:"E lirë", free_sub:"ende në dispozicion",
+      reserved:"E rezervuar", reserved_sub:"në proces",
+      sold:"E shitur", sold_sub:"e mbyllur",
+      revenue:"Të ardhura", revenue_sub:"të paguara (parapagime + çmime)"
+    },
+    chart: {
+      status_title:"Përmbledhje statusi", status_sub:"në kohë reale",
+      money_title:"Financa", money_sub:"paguar vs mbetur (nga çmimi dhe pagesat)"
+    },
+    tbl: {
+      title:"Apartamente",
+      nr:"Nr", type:"Tipi", area:"m²", rooms:"Dhoma", price:"Çmimi", paid:"Paguar", open:"Mbetur",
+      status:"Status", buyer:"Blerësi", notary_cadastre:"Noter/Kadastra", actions:"Veprime"
+    },
+    ph: { search:"Kërko: Nr, blerës, status, shënime" },
+    sort: {
+      nr:"Rendit: Nr", status:"Rendit: Status",
+      price_desc:"Rendit: Çmimi ↓", price_asc:"Rendit: Çmimi ↑",
+      paid_desc:"Rendit: Paguar ↓"
+    },
+    status: { frei:"e lirë", reserviert:"e rezervuar", verkauft:"e shitur" },
+    modal: { edit:"Redakto" },
+    tab: { details:"Detaje", buyer:"Blerësi", check:"Listë", images:"Foto" },
+    field: {
+      nr:"Numri i apartamentit",
+      status:"Statusi",
+      type:"Tipi (p.sh. 2 dhoma)",
+      floor:"Kati",
+      area:"Sipërfaqe m²",
+      rooms:"Dhoma",
+      price:"Çmimi (EUR)",
+      paid:"Paguar (EUR)",
+      notes:"Shënime",
+      buyer_name:"Emri i blerësit",
+      buyer_phone:"Telefon",
+      buyer_email:"Email",
+      res_date:"Data e rezervimit",
+      buyer_id:"ID/Pasaportë (opsionale)",
+      buyer_address:"Adresa (opsionale)",
+      notary_name:"Emri i noterit",
+      notary_date:"Data e noterit"
+    },
+    check: {
+      title:"Listë kontrolli (Maqedonia e Veriut)",
+      sub:"Tipike: rezervim/para-kontratë, noterizim, taksa/transfer, regjistrim në kadastër, dorëzim.",
+      due:"Verifikim / titull i pastër", due_sub:"pronësi, hipoteka, barrë",
+      pre:"Para-kontratë / rezervim", pre_sub:"me shkrim, shpesh parapagim",
+      notary:"Nënshkruar te noteri", notary_sub:"kontrata noterizohet",
+      tax:"Taksa e transferit", tax_sub:"varet nga komuna",
+      cad:"Regjistrimi në kadastër", cad_sub:"ndryshimi i pronësisë",
+      hand:"Dorëzim / procesverbal", hand_sub:"çelësa, matësa, defekte"
+    },
+    img: {
+      title:"Fotot e apartamentit",
+      sub:"Ngarkimi i ruan fotot lokalisht në shfletues. Për shumë foto përdor server/cloud më vonë."
+    },
+    side: {
+      quick:"Info e shpejtë", price:"Çmimi", open:"Mbetur",
+      todo:"Detyra (auto)"
+    },
+    misc: {
+      none:"—", notary:"Noter", cadastre:"Kadastra",
+      all_done:"Gjithçka gati"
+    },
+    pdf: {
+      apt_title:(nr)=>`Apartamenti ${nr} • AntaBau dhe Hess`,
+      overview_title:"Shitje • Përmbledhje",
+      created:"Krijuar",
+      field:"Fusha", value:"Vlera",
+      kpis:"KPIs",
+      checklist_open:"Listë kontrolli (hapur)",
+      notes:"Shënime",
+      labels: {
+        status:"Statusi",
+        typ:"Tipi",
+        floor:"Kati",
+        area:"Sipërfaqe (m²)",
+        rooms:"Dhoma",
+        price:"Çmimi (EUR)",
+        paid:"Paguar (EUR)",
+        open:"Mbetur (EUR)",
+        buyer:"Blerësi",
+        phone:"Telefon",
+        email:"Email",
+        resDate:"Data e rezervimit",
+        notary:"Noter",
+        notaryDate:"Data e noterit"
+      }
+    },
+    todo: {
+      due:"Verifikim / titull i pastër",
+      pre:"Para-kontratë / rezervim",
+      notary:"Nënshkruar te noteri",
+      tax:"Taksa e transferit",
+      cad:"Regjistrimi në kadastër",
+      hand:"Dorëzim / procesverbal"
+    }
+  }
+};
+
+let currentLang = localStorage.getItem("antabau_lang") || "de";
+function t(path) {
+  const parts = path.split(".");
+  let obj = I18N[currentLang];
+  for (const p of parts) obj = obj?.[p];
+  return obj ?? path;
+}
+function tFn(path, ...args) {
+  const v = t(path);
+  return typeof v === "function" ? v(...args) : v;
+}
+function applyLang() {
+  document.documentElement.setAttribute("lang", currentLang === "sq" ? "sq" : (currentLang === "en" ? "en" : "de-CH"));
+
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    const val = t(key);
+    if (typeof val === "string") el.textContent = val;
+  });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    const key = el.getAttribute("data-i18n-ph");
+    const val = t(key);
+    if (typeof val === "string") el.setAttribute("placeholder", val);
   });
 
-  if(d.offsetY_std !== undefined){
-    const yVal = parseFloat(d.offsetY_std) || 0;
-    offsetY_std.value = yVal.toFixed(3);
-    saveYStd(yVal);
+  const fs = document.getElementById("filterStatus");
+  if (fs) {
+    const opts = [...fs.options];
+    opts[0].textContent = currentLang === "en" ? "Status: all" : currentLang === "sq" ? "Status: të gjitha" : "Status: alle";
+    opts[1].textContent = t("status.frei");
+    opts[2].textContent = t("status.reserviert");
+    opts[3].textContent = t("status.verkauft");
   }
 
-  tplName.value = key.replace("tpl_","");
-}
-
-function deleteTemplate(){
-  const key=templateSelect.value;
-  if(key.startsWith("tpl_")){
-    localStorage.removeItem(key);
-    refreshTemplateList();
+  const ss = document.getElementById("f_status");
+  if (ss) {
+    [...ss.options].forEach(o => { o.textContent = t(`status.${o.value}`); });
   }
-}
 
-function saveLearnStart(){
-  learnStart={
-    z1Ps:F("z1P_soll"), z1Hs:F("z1H_soll"),
-    z2Ps:F("z2P_soll"), z2Hs:F("z2H_soll"),
-    z1Pi:F("z1P_ist"), z1Hi:F("z1H_ist"),
-    z2Pi:F("z2P_ist"), z2Hi:F("z2H_ist")
-  };
-  factorStatus.textContent="Start gespeichert";
-}
-
-function applyLearning(){
-  if(!learnStart)return;
-  const lx=F("learn_x"), ly=F("learn_y"), lz=F("learn_z");
-  const s=learnStart;
-  const D1s=(s.z1Ps+s.z1Hs)/2, D2s=(s.z2Ps+s.z2Hs)/2;
-  const D1i=(s.z1Pi+s.z1Hi)/2, D2i=(s.z2Pi+s.z2Hi)/2;
-  const dMean=((D1i-D1s)+(D2i-D2s))/2;
-  const dDiff=(D2i-D2s)-(D1i-D1s);
-  const pair2Ist=s.z2Hi-s.z2Pi;
-  const pair2Soll=s.z2Hs-s.z2Ps;
-  const dPair=pair2Ist-pair2Soll;
-  const key=getModelKey();
-  let arr=loadSamples(key);
-  arr.push({dMean:dMean,dDiff:dDiff,dPair:dPair,offX:lx,offY:ly,offZ:lz});
-  saveSamples(key,arr);
-  factorStatus.textContent="gelernt";
-}
-function getModelKey(){
-  const m=(machine_id.value||"").trim();
-  const a=(article_id.value||"").trim();
-  if(!m&&!a)return"global";
-  return m+"|"+a;
-}
-
-function loadSamples(key){
-  try{
-    const s=localStorage.getItem("samples_"+key);
-    if(!s)return[];
-    return JSON.parse(s);
-  }catch(e){return[];}
-}
-
-function saveSamples(key,arr){
-  if(arr.length>300)arr=arr.slice(arr.length-300);
-  localStorage.setItem("samples_"+key,JSON.stringify(arr));
-}
-
-function gaussGain(s,cMean,cDiff,cPair,axis){
-  if(s.length===0)return null;
-  const sm=0.03,sd=0.03,sp=0.03;
-  const iM=1/(sm*sm), iD=1/(sd*sd), iP=1/(sp*sp);
-  let s1=0,s2=0;
-  for(const v of s){
-    const dm=cMean-(v.dMean||0);
-    const dd=cDiff-(v.dDiff||0);
-    const dp=cPair-(v.dPair||0);
-    const w=Math.exp(-0.5*(dm*dm*iM+dd*dd*iD+dp*dp*iP));
-    let x,y;
-    if(axis==="X"){x=v.dMean||0; y=v.offX||0;}
-    else if(axis==="Z"){x=(v.dMean||0)+(v.dDiff||0); y=v.offZ||0;}
-    else{x=v.dPair||0; y=v.offY||0;}
-    s1+=w*x*x; s2+=w*x*y;
-  }
-  if(Math.abs(s1)<1e-6)return null;
-  return s2/s1;
-}
-
-function setYMode(on){
-  const b1=yOffBtn, b2=yOnBtn;
-  y_enable.value=on?"1":"0";
-  if(on){
-    b2.classList.add("y-active");
-    b1.classList.remove("y-active");
-  }else{
-    b1.classList.add("y-active");
-    b2.classList.remove("y-active");
-  }
-}
-
-function loadYStd(){
-  const v=localStorage.getItem("offsetYStd");
-  return v?parseFloat(v):0;
-}
-function saveYStd(v){
-  localStorage.setItem("offsetYStd",v.toString());
-}
-
-function parseDFQ(){
-  const f=dfqFile.files[0];
-  if(!f)return;
-  const r=new FileReader();
-  r.onload=()=>{
-    const L=r.result.split(/\r?\n/);
-    const v={};
-    L.forEach(l=>{
-      const m=l.match(/K0001\/(\d+)\s+([\d\.]+)/);
-      if(m)v[m[1]]=parseFloat(m[2]);
+  const sb = document.getElementById("sortBy");
+  if (sb) {
+    [...sb.options].forEach(o => {
+      const key = o.getAttribute("data-i18n");
+      if (key) o.textContent = t(key);
     });
-    if(v["1"]!=null)z1P_ist.value=v["1"].toFixed(3);
-    if(v["2"]!=null)z1H_ist.value=v["2"].toFixed(3);
-    if(v["3"]!=null)z2P_ist.value=v["3"].toFixed(3);
-    if(v["4"]!=null)z2H_ist.value=v["4"].toFixed(3);
-    calculate(true);
+  }
+
+  renderTable();
+}
+
+/* =========================
+   Data model
+   ========================= */
+const STORAGE_KEY = "antabau_hess_immo_dashboard_v2";
+
+function defaultApartments(n=45) {
+  const arr = [];
+  for (let i=1; i<=n; i++) {
+    arr.push({
+      id: crypto.randomUUID(),
+      nr: String(i).padStart(2,"0"),
+      status: "frei",
+      typ: "",
+      floor: "",
+      area: 0,
+      rooms: 0,
+      price: 0,
+      paid: 0,
+      notes: "",
+
+      buyerName: "",
+      buyerPhone: "",
+      buyerEmail: "",
+      buyerId: "",
+      buyerAddress: "",
+      resDate: "",
+
+      notaryName: "",
+      notaryDate: "",
+
+      checklist: {
+        dueDiligence: false,
+        preContract: false,
+        notary: false,
+        tax: false,
+        cadastre: false,
+        handover: false
+      },
+
+      images: []
+    });
+  }
+  return arr;
+}
+
+let state = {
+  meta: { projectName: "Projekt", currency: "EUR", updatedAt: null },
+  apartments: []
+};
+
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    state.apartments = defaultApartments(45);
+    state.meta.updatedAt = new Date().toISOString();
+    return;
+  }
+  try {
+    state = JSON.parse(raw);
+    if (!state?.apartments?.length) state.apartments = defaultApartments(45);
+  } catch {
+    state.apartments = defaultApartments(45);
+  }
+}
+
+function saveState() {
+  state.meta.updatedAt = new Date().toISOString();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  toast(currentLang === "en" ? "Saved" : currentLang === "sq" ? "U ruajt" : "Gespeichert");
+}
+
+/* =========================
+   Helpers
+   ========================= */
+function money(v) {
+  const num = Number(v || 0);
+  return new Intl.NumberFormat("de-CH", { style:"currency", currency:"EUR", maximumFractionDigits: 0 }).format(num);
+}
+function clampNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+function chip(status) {
+  const label = t(`status.${status}`);
+  if (status === "frei") return `<span class="chip chip-frei"><i class="fa-solid fa-circle"></i> ${escapeHtml(label)}</span>`;
+  if (status === "reserviert") return `<span class="chip chip-res"><i class="fa-solid fa-circle"></i> ${escapeHtml(label)}</span>`;
+  return `<span class="chip chip-sold"><i class="fa-solid fa-circle"></i> ${escapeHtml(label)}</span>`;
+}
+function toast(msg) {
+  const el = document.createElement("div");
+  el.className = "fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-soft text-sm font-semibold";
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.style.opacity="0"; el.style.transition="opacity .35s"; }, 1200);
+  setTimeout(()=> el.remove(), 1700);
+}
+
+/* =========================
+   Rendering
+   ========================= */
+const tableBody = document.getElementById("tableBody");
+const pillCount = document.getElementById("pillCount");
+let chartStatus, chartMoney;
+
+function getFilteredSorted() {
+  const q = (document.getElementById("search").value || "").trim().toLowerCase();
+  const f = document.getElementById("filterStatus").value;
+  const s = document.getElementById("sortBy").value;
+
+  let list = [...state.apartments];
+
+  if (f !== "alle") list = list.filter(a => a.status === f);
+
+  if (q) {
+    list = list.filter(a => {
+      const hay = [
+        a.nr, a.status, a.typ, a.floor,
+        a.buyerName, a.buyerPhone, a.buyerEmail,
+        a.notes, a.notaryName
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  const statusRank = { frei: 0, reserviert: 1, verkauft: 2 };
+
+  list.sort((a,b) => {
+    if (s === "nr") return (a.nr || "").localeCompare(b.nr || "", "de-CH", {numeric:true});
+    if (s === "status") return (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9) || (a.nr||"").localeCompare(b.nr||"", "de-CH", {numeric:true});
+    if (s === "preis_desc") return clampNum(b.price) - clampNum(a.price);
+    if (s === "preis_asc") return clampNum(a.price) - clampNum(b.price);
+    if (s === "paid_desc") return clampNum(b.paid) - clampNum(a.paid);
+    return 0;
+  });
+
+  return list;
+}
+
+function renderTable() {
+  const list = getFilteredSorted();
+  pillCount.textContent = String(list.length);
+
+  tableBody.innerHTML = list.map(ap => {
+    const open = Math.max(0, clampNum(ap.price) - clampNum(ap.paid));
+    const notaryDone = !!ap.checklist?.notary;
+    const cadDone = !!ap.checklist?.cadastre;
+
+    let nk = [];
+    if (notaryDone) nk.push(t("misc.notary"));
+    if (cadDone) nk.push(t("misc.cadastre"));
+    const nkText = nk.length ? nk.join(" + ") : t("misc.none");
+
+    return `
+      <tr class="row-hover transition cursor-pointer" data-id="${ap.id}">
+        <td class="py-3 pr-3 font-semibold">${escapeHtml(ap.nr)}</td>
+        <td class="py-3 pr-3">${escapeHtml(ap.typ || t("misc.none"))}</td>
+        <td class="py-3 pr-3">${clampNum(ap.area) ? escapeHtml(String(ap.area)) : t("misc.none")}</td>
+        <td class="py-3 pr-3">${clampNum(ap.rooms) ? escapeHtml(String(ap.rooms)) : t("misc.none")}</td>
+        <td class="py-3 pr-3 font-semibold">${money(ap.price)}</td>
+        <td class="py-3 pr-3">${money(ap.paid)}</td>
+        <td class="py-3 pr-3">${money(open)}</td>
+        <td class="py-3 pr-3">${chip(ap.status)}</td>
+        <td class="py-3 pr-3">${escapeHtml(ap.buyerName || t("misc.none"))}</td>
+        <td class="py-3 pr-3">${escapeHtml(nkText)}</td>
+        <td class="py-3 pr-3">
+          <button class="btnEdit px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:opacity-90 transition text-xs font-semibold" data-id="${ap.id}">
+            ${escapeHtml(t("btn.edit"))}
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  [...tableBody.querySelectorAll("tr[data-id]")].forEach(tr => {
+    tr.addEventListener("dblclick", () => openModal(tr.dataset.id));
+  });
+  [...tableBody.querySelectorAll(".btnEdit")].forEach(btn => {
+    btn.addEventListener("click", (e) => { e.stopPropagation(); openModal(btn.dataset.id); });
+  });
+
+  renderKPIsAndCharts();
+}
+
+function renderKPIsAndCharts() {
+  const frei = state.apartments.filter(a=>a.status==="frei").length;
+  const res = state.apartments.filter(a=>a.status==="reserviert").length;
+  const sold = state.apartments.filter(a=>a.status==="verkauft").length;
+
+  const paidSum = state.apartments.reduce((s,a)=> s + clampNum(a.paid), 0);
+  const priceSum = state.apartments.reduce((s,a)=> s + clampNum(a.price), 0);
+  const openSum = Math.max(0, priceSum - paidSum);
+
+  document.getElementById("kpiFrei").textContent = frei;
+  document.getElementById("kpiRes").textContent = res;
+  document.getElementById("kpiSold").textContent = sold;
+  document.getElementById("kpiPaid").textContent = money(paidSum);
+
+  const ctxS = document.getElementById("chartStatus");
+  const dataS = {
+    labels: [t("status.frei"), t("status.reserviert"), t("status.verkauft")],
+    datasets: [{ label: t("tbl.title"), data:[frei,res,sold] }]
   };
-  r.readAsText(f);
+
+  const ctxM = document.getElementById("chartMoney");
+  const dataM = {
+    labels: [currentLang==="en" ? "Paid" : currentLang==="sq" ? "Paguar" : "Bezahlt", currentLang==="en" ? "Open" : currentLang==="sq" ? "Mbetur" : "Offen"],
+    datasets: [{ label:"EUR", data:[paidSum, openSum] }]
+  };
+
+  if (!chartStatus) {
+    chartStatus = new Chart(ctxS, {
+      type: "doughnut",
+      data: dataS,
+      options: { responsive: true, plugins: { legend: { position: "bottom" } }, cutout: "62%" }
+    });
+  } else {
+    chartStatus.data = dataS;
+    chartStatus.update();
+  }
+
+  if (!chartMoney) {
+    chartMoney = new Chart(ctxM, {
+      type: "bar",
+      data: dataM,
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { ticks: { callback: (v)=> money(v).replace("€","").trim() } } }
+      }
+    });
+  } else {
+    chartMoney.data = dataM;
+    chartMoney.update();
+  }
 }
 
-function calculate(force){
-  const z1Ps=F("z1P_soll"), z1Hs=F("z1H_soll");
-  const z2Ps=F("z2P_soll"), z2Hs=F("z2H_soll");
-  const z1Pi=F("z1P_ist"), z1Hi=F("z1H_ist");
-  const z2Pi=F("z2P_ist"), z2Hi=F("z2H_ist");
+/* =========================
+   Modal
+   ========================= */
+const modal = document.getElementById("modal");
+let currentId = null;
 
-  const D1s=(z1Ps+z1Hs)/2, D2s=(z2Ps+z2Hs)/2;
-  const D1i=(z1Pi+z1Hi)/2, D2i=(z2Pi+z2Hi)/2;
+function getById(id) { return state.apartments.find(a=>a.id===id); }
+function setVal(id, v) { document.getElementById(id).value = (v ?? ""); }
+function setChk(id, v) { document.getElementById(id).checked = !!v; }
 
-  const dD1=D1i-D1s;
-  const dD2=D2i-D2s;
-
-  const dMean=(dD1+dD2)/2;
-  const dDiff=dD2-dD1;
-
-  const pair2Ist=z2Hi-z2Pi;
-  const pair2Soll=z2Hs-z2Ps;
-  const dPair=pair2Ist-pair2Soll;
-
-  const w=F("winkel")*(Math.PI/180);
-  const tanw=Math.tan(w), cosw=Math.cos(w);
-  const ZD=5.55;
-  const wirkX=(1/cosw)*(1+tanw*ZD);
-
-  const yEnabled=y_enable.value==="1";
-
-  let ys=F("offsetY_std");
-  if(isNaN(ys))ys=0;
-  saveYStd(ys);
-  offsetY_std.value=ys.toFixed(3);
-
-  const featX=dMean;
-  const featZ=dMean+dDiff;
-  const featY=dPair;
-
-  const key=getModelKey();
-  const s=loadSamples(key);
-
-  const baseX=wirkX;
-  const baseZ=0.6;
-  const baseY=0.7;
-
-  function sugg(feat,ax,base){
-    if(ax==="Y"&&!yEnabled)return 0;
-    let g=s.length>0?gaussGain(s,dMean,dDiff,dPair,ax):null;
-    if(g==null)g=base;
-    return g*feat;
-  }
-
-  let oX=sugg(featX,"X",baseX);
-  let oZ=sugg(featZ,"Z",baseZ);
-  let oY=sugg(featY,"Y",baseY);
-
-  if(!isFinite(oZ)){
-    oZ=Math.abs(tanw)>1e-6?-(dDiff/(2*tanw)):0;
-  }
-
-  function clean(v){
-    v=Math.round(v*100)/100;
-    return Math.abs(v)<0.002?0:v;
-  }
-  oX=clean(oX); oY=clean(oY); oZ=clean(oZ);
-
-  if(yEnabled&&oY!==0)yStdSuggest.textContent=oY.toFixed(2)+" mm";
-  else yStdSuggest.textContent="";
-
-  let uX,uZ,uY=ys;
-
-  if(force){
-    learn_x.value=oX.toFixed(2);
-    learn_z.value=oZ.toFixed(2);
-    uX=oX; uZ=oZ;
-  }else{
-    if(learn_x.value.trim()===""){learn_x.value=oX.toFixed(2); uX=oX;}
-    else{uX=clean(F("learn_x")); learn_x.value=uX.toFixed(2);}
-    if(learn_z.value.trim()===""){learn_z.value=oZ.toFixed(2); uZ=oZ;}
-    else{uZ=clean(F("learn_z")); learn_z.value=uZ.toFixed(2);}
-  }
-
-  result.textContent=
-    "ΔD1: "+dD1.toFixed(3)+" mm\n"+
-    "ΔD2: "+dD2.toFixed(3)+" mm\n"+
-    "ΔDmean: "+dMean.toFixed(3)+" mm\n"+
-    "ΔDiff: "+dDiff.toFixed(3)+" mm\n"+
-    "ΔPair2: "+dPair.toFixed(3)+" mm\n\n"+
-    "Offsets:\n"+
-    "X: "+uX.toFixed(2)+" mm\n"+
-    "Z: "+uZ.toFixed(2)+" mm\n"+
-    "Y: "+uY.toFixed(2)+" mm";
-
-  fanucOut.textContent=
-    "FANUC WEAR\n"+
-    "X: "+uX.toFixed(2)+" mm\n"+
-    "Z: "+uZ.toFixed(2)+" mm\n"+
-    "Y: "+uY.toFixed(2)+" mm";
+function progressTodo(ap) {
+  const tck = ap.checklist || {};
+  const items = [
+    {k:"dueDiligence", label:t("todo.due")},
+    {k:"preContract", label:t("todo.pre")},
+    {k:"notary", label:t("todo.notary")},
+    {k:"tax", label:t("todo.tax")},
+    {k:"cadastre", label:t("todo.cad")},
+    {k:"handover", label:t("todo.hand")}
+  ];
+  return items.filter(it => !tck[it.k]).map(it => it.label);
 }
 
-function exportPDF(){
-  var doc=new jsPDF();
+function refreshSide(ap) {
+  document.getElementById("sideStatus").innerHTML = chip(ap.status);
+  const open = Math.max(0, clampNum(ap.price) - clampNum(ap.paid));
+  document.getElementById("sidePrice").textContent = money(ap.price);
+  document.getElementById("sideOpen").textContent = money(open);
 
+  const todo = progressTodo(ap);
+  const ul = document.getElementById("todoList");
+  if (!todo.length) {
+    ul.innerHTML = `<li class="text-emerald-600 dark:text-emerald-400 font-semibold"><i class="fa-solid fa-check mr-2"></i>${escapeHtml(t("misc.all_done"))}</li>`;
+  } else {
+    ul.innerHTML = todo.slice(0,6).map(x => `
+      <li class="flex items-start gap-2">
+        <i class="fa-regular fa-circle text-slate-400 mt-[3px]"></i>
+        <span>${escapeHtml(x)}</span>
+      </li>
+    `).join("");
+  }
+}
+
+function setTab(name) {
+  document.querySelectorAll(".tabPane").forEach(p => p.classList.add("hidden"));
+  document.getElementById(`tab-${name}`).classList.remove("hidden");
+
+  document.querySelectorAll(".tabBtn").forEach(b => {
+    const isActive = b.dataset.tab === name;
+    b.className = "tabBtn px-3 py-2 rounded-2xl text-sm font-semibold " + (isActive
+      ? "bg-indigo-600 text-white"
+      : "border border-slate-200 dark:border-slate-800");
+  });
+}
+
+function openModal(id) {
+  const ap = getById(id);
+  if (!ap) return;
+  currentId = id;
+
+  document.getElementById("modalTitle").textContent =
+    (currentLang==="en" ? `Apartment ${ap.nr}` : currentLang==="sq" ? `Apartamenti ${ap.nr}` : `Wohnung ${ap.nr}`);
+
+  setVal("f_nr", ap.nr);
+  setVal("f_status", ap.status);
+  setVal("f_typ", ap.typ);
+  setVal("f_floor", ap.floor);
+  setVal("f_area", ap.area);
+  setVal("f_rooms", ap.rooms);
+  setVal("f_price", ap.price);
+  setVal("f_paid", ap.paid);
+  setVal("f_notes", ap.notes);
+
+  setVal("f_buyerName", ap.buyerName);
+  setVal("f_buyerPhone", ap.buyerPhone);
+  setVal("f_buyerEmail", ap.buyerEmail);
+  setVal("f_buyerId", ap.buyerId);
+  setVal("f_buyerAddress", ap.buyerAddress);
+  setVal("f_resDate", ap.resDate);
+
+  setVal("f_notaryName", ap.notaryName);
+  setVal("f_notaryDate", ap.notaryDate);
+
+  const c = ap.checklist || {};
+  setChk("c_dueDiligence", !!c.dueDiligence);
+  setChk("c_preContract", !!c.preContract);
+  setChk("c_notary", !!c.notary);
+  setChk("c_tax", !!c.tax);
+  setChk("c_cadastre", !!c.cadastre);
+  setChk("c_handover", !!c.handover);
+
+  refreshSide(ap);
+  renderImages(ap);
+
+  modal.classList.remove("hidden");
+  setTab("details");
+}
+
+function closeModal() {
+  modal.classList.add("hidden");
+  currentId = null;
+}
+
+function readModalToApartment(ap) {
+  ap.nr = String(document.getElementById("f_nr").value || "").trim();
+  ap.status = document.getElementById("f_status").value;
+  ap.typ = document.getElementById("f_typ").value;
+  ap.floor = document.getElementById("f_floor").value;
+  ap.area = clampNum(document.getElementById("f_area").value);
+  ap.rooms = clampNum(document.getElementById("f_rooms").value);
+  ap.price = clampNum(document.getElementById("f_price").value);
+  ap.paid = clampNum(document.getElementById("f_paid").value);
+  ap.notes = document.getElementById("f_notes").value;
+
+  ap.buyerName = document.getElementById("f_buyerName").value;
+  ap.buyerPhone = document.getElementById("f_buyerPhone").value;
+  ap.buyerEmail = document.getElementById("f_buyerEmail").value;
+  ap.buyerId = document.getElementById("f_buyerId").value;
+  ap.buyerAddress = document.getElementById("f_buyerAddress").value;
+  ap.resDate = document.getElementById("f_resDate").value;
+
+  ap.notaryName = document.getElementById("f_notaryName").value;
+  ap.notaryDate = document.getElementById("f_notaryDate").value;
+
+  ap.checklist = {
+    dueDiligence: document.getElementById("c_dueDiligence").checked,
+    preContract: document.getElementById("c_preContract").checked,
+    notary: document.getElementById("c_notary").checked,
+    tax: document.getElementById("c_tax").checked,
+    cadastre: document.getElementById("c_cadastre").checked,
+    handover: document.getElementById("c_handover").checked
+  };
+}
+
+/* =========================
+   Images
+   ========================= */
+const imageGrid = document.getElementById("imageGrid");
+
+document.getElementById("fileImages").addEventListener("change", async (e) => {
+  if (!currentId) return;
+  const ap = getById(currentId);
+  if (!ap) return;
+
+  const files = [...e.target.files || []];
+  for (const file of files) {
+    const dataUrl = await fileToDataURL(file);
+    ap.images.push({ name: file.name, dataUrl });
+  }
+  renderImages(ap);
+  e.target.value = "";
+});
+
+document.getElementById("btnClearImages").addEventListener("click", () => {
+  if (!currentId) return;
+  const ap = getById(currentId);
+  if (!ap) return;
+  ap.images = [];
+  renderImages(ap);
+  toast(currentLang==="en" ? "Images removed" : currentLang==="sq" ? "Fotot u hoqën" : "Bilder entfernt");
+});
+
+function renderImages(ap) {
+  if (!ap.images?.length) {
+    imageGrid.innerHTML = `<div class="col-span-full text-sm text-slate-500 dark:text-slate-400">${escapeHtml(currentLang==="en" ? "No images yet" : currentLang==="sq" ? "Ende pa foto" : "Noch keine Bilder hochgeladen")}</div>`;
+    return;
+  }
+  imageGrid.innerHTML = ap.images.map((img, idx) => `
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950">
+      <div class="aspect-video bg-slate-100 dark:bg-slate-900">
+        <img src="${img.dataUrl}" class="w-full h-full object-cover" alt="Bild" />
+      </div>
+      <div class="p-2 flex items-center justify-between gap-2">
+        <div class="text-xs text-slate-500 dark:text-slate-400 truncate">${escapeHtml(img.name || "Image")}</div>
+        <button class="text-xs px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-800 hover:opacity-90" onclick="removeImage(${idx})">X</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.removeImage = function(idx) {
+  if (!currentId) return;
+  const ap = getById(currentId);
+  if (!ap) return;
+  ap.images.splice(idx,1);
+  renderImages(ap);
+};
+
+function fileToDataURL(file) {
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+/* =========================
+   PDF generation
+   ========================= */
+function pdfForApartment(ap) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+  const title = tFn("pdf.apt_title", ap.nr);
   doc.setFont("helvetica","bold");
-  doc.setFontSize(14);
-  doc.text("Gear Offset – Messbericht",10,14);
+  doc.setFontSize(16);
+  doc.text(title, 40, 52);
 
   doc.setFont("helvetica","normal");
-  doc.setFontSize(9);
-  doc.text("Datum: "+new Date().toLocaleString(),10,20);
-  if(article_id.value)doc.text("Artikel: "+article_id.value,10,26);
-  if(machine_id.value)doc.text("Maschine: "+machine_id.value,10,32);
+  doc.setFontSize(10);
+  doc.text(`${t("pdf.created")}: ${new Date().toLocaleString("de-CH")}`, 40, 72);
 
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(11);
-  doc.text("Soll / Ist",10,40);
-  doc.line(10,42,200,42);
+  const open = Math.max(0, clampNum(ap.price) - clampNum(ap.paid));
+  const L = t("pdf.labels");
 
-  let y=48;
-  function row(t,s,i){
-    doc.text((t||"")+" "+(s||"-")+"  "+(i||"-"),10,y);
-    y+=5;
-  }
-  row("Z1 Pferch",z1P_soll.value,z1P_ist.value);
-  row("Z1 Huell",z1H_soll.value,z1H_ist.value);
-  row("Z2 Pferch",z2P_soll.value,z2P_ist.value);
-  row("Z2 Huell",z2H_soll.value,z2H_ist.value);
+  const rows = [
+    [L.status, t(`status.${ap.status}`)],
+    [L.typ, ap.typ || t("misc.none")],
+    [L.floor, ap.floor || t("misc.none")],
+    [L.area, String(ap.area || 0)],
+    [L.rooms, String(ap.rooms || 0)],
+    [L.price, money(ap.price)],
+    [L.paid, money(ap.paid)],
+    [L.open, money(open)],
+    [L.buyer, ap.buyerName || t("misc.none")],
+    [L.phone, ap.buyerPhone || t("misc.none")],
+    [L.email, ap.buyerEmail || t("misc.none")],
+    [L.resDate, ap.resDate || t("misc.none")],
+    [L.notary, ap.notaryName || t("misc.none")],
+    [L.notaryDate, ap.notaryDate || t("misc.none")]
+  ];
 
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(11);
-  doc.text("Offsets",10,y+6);
-  doc.line(10,y+8,200,y+8);
-  y+=14;
-
-  doc.setFont("courier","normal");
-  result.textContent.split("\n").forEach(l=>{
-    doc.text(l,10,y); y+=5;
+  doc.autoTable({
+    startY: 90,
+    head: [[t("pdf.field"), t("pdf.value")]],
+    body: rows,
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 6 },
+    headStyles: { fillColor: [15, 23, 42] },
+    theme: "grid",
+    margin: { left: 40, right: 40 }
   });
 
-  const offX = F("learn_x");
-  const offZ = F("learn_z");
-  const offY = F("offsetY_std");
+  const todo = progressTodo(ap);
+  const y = doc.lastAutoTable.finalY + 16;
 
-  const qrText =
-    "Gear Offset 2050\n"+
-    "Artikel: "+(article_id.value||"-")+"\n"+
-    "Maschine: "+(machine_id.value||"-")+"\n"+
-    "X: "+offX.toFixed(2)+" mm\n"+
-    "Z: "+offZ.toFixed(2)+" mm\n"+
-    "Y: "+offY.toFixed(2)+" mm";
+  doc.setFont("helvetica","bold");
+  doc.text(t("pdf.checklist_open"), 40, y);
+  doc.setFont("helvetica","normal");
+  const list = todo.length ? todo : [t("misc.all_done")];
 
-  const qrTemp = document.createElement("div");
-  new QRCode(qrTemp,{
-    text: qrText,
-    width:180,
-    height:180,
-    correctLevel:QRCode.CorrectLevel.H
+  doc.autoTable({
+    startY: y + 8,
+    head: [["To-do"]],
+    body: list.map(x=>[x]),
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 6 },
+    headStyles: { fillColor: [99, 102, 241] },
+    theme: "grid",
+    margin: { left: 40, right: 40 }
   });
 
-  let qrData=null;
-  const img=qrTemp.querySelector("img");
-  if(img && img.src){
-    qrData=img.src;
-  }else{
-    const canvas=qrTemp.querySelector("canvas");
-    if(canvas) qrData=canvas.toDataURL("image/png");
-  }
-
-  if(qrData){
+  if (ap.notes?.trim()) {
+    const y2 = doc.lastAutoTable.finalY + 16;
+    doc.setFont("helvetica","bold");
+    doc.text(t("pdf.notes"), 40, y2);
     doc.setFont("helvetica","normal");
-    doc.setFontSize(8);
-    doc.text("QR scannen um Offsets auf dem Handy zu sehen", 120, 235);
-    doc.addImage(qrData,"PNG",150,240,40,40);
+    doc.setFontSize(10);
+    doc.text(doc.splitTextToSize(ap.notes, 515), 40, y2 + 14);
   }
 
-  doc.save("gear-offset.pdf");
+  doc.save(`Apartment_${ap.nr}_AntaBau_Hess.pdf`);
 }
 
-window.addEventListener("load",()=>{
-  const ys=loadYStd();
-  offsetY_std.value=ys.toFixed(3);
-});
-</script>
+function pdfForOverview() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
 
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(16);
+  doc.text(t("pdf.overview_title"), 40, 52);
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  doc.text(`AntaBau und Hess • ${t("pdf.created")}: ${new Date().toLocaleString("de-CH")}`, 40, 72);
+
+  const frei = state.apartments.filter(a=>a.status==="frei").length;
+  const res = state.apartments.filter(a=>a.status==="reserviert").length;
+  const sold = state.apartments.filter(a=>a.status==="verkauft").length;
+  const paidSum = state.apartments.reduce((s,a)=> s + clampNum(a.paid), 0);
+  const priceSum = state.apartments.reduce((s,a)=> s + clampNum(a.price), 0);
+  const openSum = Math.max(0, priceSum - paidSum);
+
+  doc.setFont("helvetica","bold");
+  doc.text(t("pdf.kpis"), 40, 98);
+  doc.setFont("helvetica","normal");
+  doc.text(`${t("status.frei")}: ${frei}   ${t("status.reserviert")}: ${res}   ${t("status.verkauft")}: ${sold}`, 40, 114);
+  doc.text(`${currentLang==="en" ? "Paid" : currentLang==="sq" ? "Paguar" : "Bezahlt"}: ${money(paidSum)}   ${currentLang==="en" ? "Open" : currentLang==="sq" ? "Mbetur" : "Offen"}: ${money(openSum)}`, 40, 130);
+
+  const rows = [...state.apartments]
+    .sort((a,b)=>(a.nr||"").localeCompare(b.nr||"", "de-CH", {numeric:true}))
+    .map(a => {
+      const open = Math.max(0, clampNum(a.price) - clampNum(a.paid));
+      const nk = `${a.checklist?.notary ? t("misc.notary")+" " : ""}${a.checklist?.cadastre ? t("misc.cadastre") : ""}`.trim() || t("misc.none");
+      return [
+        a.nr,
+        t(`status.${a.status}`),
+        a.typ || t("misc.none"),
+        String(a.area || 0),
+        String(a.rooms || 0),
+        money(a.price),
+        money(a.paid),
+        money(open),
+        a.buyerName || t("misc.none"),
+        nk
+      ];
+    });
+
+  doc.autoTable({
+    startY: 150,
+    head: [[t("tbl.nr"), t("tbl.status"), t("tbl.type"), t("tbl.area"), t("tbl.rooms"), t("tbl.price"), t("tbl.paid"), t("tbl.open"), t("tbl.buyer"), t("tbl.notary_cadastre")]],
+    body: rows,
+    styles: { font: "helvetica", fontSize: 9, cellPadding: 5 },
+    headStyles: { fillColor: [15, 23, 42] },
+    theme: "grid",
+    margin: { left: 40, right: 40 }
+  });
+
+  doc.save("AntaBau_Hess_Overview.pdf");
+}
+
+/* =========================
+   Excel export
+   ========================= */
+function exportExcel() {
+  const data = state.apartments.map(a => {
+    const open = Math.max(0, clampNum(a.price) - clampNum(a.paid));
+    return {
+      Nr: a.nr,
+      Status: a.status,
+      Typ: a.typ,
+      Stockwerk: a.floor,
+      "m2": a.area,
+      Zimmer: a.rooms,
+      Preis_EUR: a.price,
+      Bezahlt_EUR: a.paid,
+      Offen_EUR: open,
+      Käufer: a.buyerName,
+      Telefon: a.buyerPhone,
+      Email: a.buyerEmail,
+      Reservation_Datum: a.resDate,
+      Notar: a.notaryName,
+      Notar_Datum: a.notaryDate,
+      DueDiligence: !!a.checklist?.dueDiligence,
+      Vorvertrag: !!a.checklist?.preContract,
+      Notar_unterschrieben: !!a.checklist?.notary,
+      TransferTax: !!a.checklist?.tax,
+      Kataster: !!a.checklist?.cadastre,
+      Übergabe: !!a.checklist?.handover,
+      Notizen: a.notes
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Wohnungen");
+  XLSX.writeFile(wb, "AntaBau_Hess_Backup.xlsx", { compression: true });
+}
+
+/* =========================
+   JSON backup/import
+   ========================= */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "AntaBau_Hess_Backup.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* =========================
+   Theme
+   ========================= */
+function setTheme(isDark) {
+  document.documentElement.classList.toggle("dark", isDark);
+  const icon = document.querySelector("#btnTheme i");
+  const text = document.querySelector("#btnTheme span");
+  if (isDark) { icon.className = "fa-solid fa-sun"; text.textContent = currentLang==="en" ? "Light" : currentLang==="sq" ? "Dritë" : "Hell"; }
+  else { icon.className = "fa-solid fa-moon"; text.textContent = t("btn.dark"); }
+  localStorage.setItem("antabau_theme_dark", isDark ? "1" : "0");
+}
+
+/* =========================
+   Events
+   ========================= */
+document.getElementById("btnSave").addEventListener("click", saveState);
+
+document.getElementById("btnExportExcel").addEventListener("click", () => { exportExcel(); toast(currentLang==="en" ? "Excel created" : currentLang==="sq" ? "Excel u krijua" : "Excel erstellt"); closeMore(); });
+document.getElementById("btnExportPDF").addEventListener("click", () => { pdfForOverview(); closeMore(); });
+document.getElementById("btnExportJSON").addEventListener("click", () => { exportJSON(); toast(currentLang==="en" ? "JSON exported" : currentLang==="sq" ? "JSON u eksportua" : "JSON Backup erstellt"); closeMore(); });
+
+document.getElementById("btnTheme").addEventListener("click", () => {
+  const isDark = document.documentElement.classList.contains("dark");
+  setTheme(!isDark);
+});
+
+document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+document.getElementById("modal").addEventListener("click", (e) => {
+  if (e.target === modal) closeModal();
+  if (e.target.classList.contains("modal-backdrop")) closeModal();
+});
+
+document.getElementById("btnSaveRow").addEventListener("click", () => {
+  if (!currentId) return;
+  const ap = getById(currentId);
+  if (!ap) return;
+  readModalToApartment(ap);
+  refreshSide(ap);
+  renderTable();
+  saveState();
+});
+
+document.getElementById("btnDeleteRow").addEventListener("click", () => {
+  if (!currentId) return;
+  const ap = getById(currentId);
+  if (!ap) return;
+  const nr = ap.nr;
+  state.apartments = state.apartments.filter(x => x.id !== currentId);
+  closeModal();
+  renderTable();
+  saveState();
+  toast((currentLang==="en" ? "Deleted " : currentLang==="sq" ? "U fshi " : "Gelöscht ") + nr);
+});
+
+document.getElementById("btnRowPDF").addEventListener("click", () => {
+  if (!currentId) return;
+  const ap = getById(currentId);
+  if (!ap) return;
+  readModalToApartment(ap);
+  pdfForApartment(ap);
+});
+
+document.querySelectorAll(".tabBtn").forEach(btn => {
+  btn.addEventListener("click", () => setTab(btn.dataset.tab));
+});
+
+document.getElementById("search").addEventListener("input", renderTable);
+document.getElementById("filterStatus").addEventListener("change", renderTable);
+document.getElementById("sortBy").addEventListener("change", renderTable);
+
+document.getElementById("btnAdd").addEventListener("click", () => {
+  const ap = {
+    id: crypto.randomUUID(),
+    nr: String((state.apartments.length + 1)).padStart(2,"0"),
+    status: "frei",
+    typ: "",
+    floor: "",
+    area: 0,
+    rooms: 0,
+    price: 0,
+    paid: 0,
+    notes: "",
+    buyerName: "",
+    buyerPhone: "",
+    buyerEmail: "",
+    buyerId: "",
+    buyerAddress: "",
+    resDate: "",
+    notaryName: "",
+    notaryDate: "",
+    checklist: { dueDiligence:false, preContract:false, notary:false, tax:false, cadastre:false, handover:false },
+    images: []
+  };
+  state.apartments.push(ap);
+  renderTable();
+  openModal(ap.id);
+});
+
+document.getElementById("btnMore").addEventListener("click", () => {
+  document.getElementById("menuMore").classList.toggle("hidden");
+});
+function closeMore() { document.getElementById("menuMore").classList.add("hidden"); }
+document.addEventListener("click", (e) => {
+  const btn = document.getElementById("btnMore");
+  const menu = document.getElementById("menuMore");
+  if (!btn.contains(e.target) && !menu.contains(e.target)) closeMore();
+});
+
+document.getElementById("fileImportJSON").addEventListener("change", async (e) => {
+  const file = (e.target.files || [])[0];
+  if (!file) return;
+  try {
+    const txt = await file.text();
+    const imported = JSON.parse(txt);
+    if (!imported?.apartments) throw new Error("Invalid backup");
+    state = imported;
+    renderTable();
+    saveState();
+    toast(currentLang==="en" ? "Import successful" : currentLang==="sq" ? "Importi u krye" : "Import erfolgreich");
+  } catch (err) {
+    toast(currentLang==="en" ? "Import failed" : currentLang==="sq" ? "Importi dështoi" : "Import fehlgeschlagen");
+    console.error(err);
+  } finally {
+    e.target.value = "";
+    closeMore();
+  }
+});
+
+document.getElementById("langSelect").addEventListener("change", (e) => {
+  currentLang = e.target.value;
+  localStorage.setItem("antabau_lang", currentLang);
+  applyLang();
+});
+
+/* =========================
+   Init
+   ========================= */
+(function init() {
+  const dark = localStorage.getItem("antabau_theme_dark") === "1";
+  setTheme(dark);
+
+  loadState();
+  renderTable();
+
+  const ls = document.getElementById("langSelect");
+  if (ls) ls.value = currentLang;
+  applyLang();
+})();
+</script>
 </body>
 </html>
